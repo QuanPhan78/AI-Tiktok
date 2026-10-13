@@ -1,0 +1,142 @@
+{
+  "version": "1.0",
+  "description": "Thư viện CTA chuyển đổi cao, tuân thủ 100% chính sách TikTok Shop Việt Nam",
+  "categories": {
+    "shop_basket": {
+      "name": "Điều hướng Giỏ hàng vàng",
+      "description": "Kêu gọi bấm vào giỏ hàng góc trái video một cách tự nhiên, rõ ràng",
+      "templates": [
+        {
+          "id": "cta_sb_01",
+          "category": "shop_basket",
+          "template": "Bấm ngay vào giỏ hàng màu vàng ở góc trái để nhận ưu đãi hôm nay nhé!",
+          "example": "Bấm ngay vào giỏ hàng màu vàng ở góc trái để nhận ưu đãi hôm nay nhé!",
+          "compliance_note": "Chỉ dẫn rõ ràng vị trí giỏ hàng hợp lệ trên TikTok Shop",
+          "duration_sec": 4
+        },
+        {
+          "id": "cta_sb_02",
+          "category": "shop_basket",
+          "template": "Sản phẩm chính hãng đã có sẵn trong giỏ hàng góc trái màn hình, đặt ngay hôm nay!",
+          "example": "Sản phẩm chính hãng đã có sẵn trong giỏ hàng góc trái màn hình, đặt ngay hôm nay!",
+          "compliance_note": "Không cam kết sai sự thật, hướng dẫn minh bạch",
+          "duration_sec": 4
+        },
+        {
+          "id": "cta_sb_03",
+          "category": "shop_basket",
+          "template": "Khám phá ngay chi tiết combo và chọn phiên bản phù hợp ở giỏ hàng bên dưới.",
+          "example": "Khám phá ngay chi tiết combo và chọn phiên bản phù hợp ở giỏ hàng bên dưới.",
+          "compliance_note": "Tạo sự chủ động cho khách hàng chọn phân loại",
+          "duration_sec": 4
+        },
+        {
+          "id": "cta_sb_04",
+          "category": "shop_basket",
+          "template": "Đừng quên chạm nhẹ vào giỏ hàng góc trái để xem bảng thành phần và quà tặng kèm nhé!",
+          "example": "Đừng quên chạm nhẹ vào giỏ hàng góc trái để xem bảng thành phần và quà tặng kèm nhé!",
+          "compliance_note": "Khuyến khích tìm hiểu kỹ thông tin sản phẩm",
+          "duration_sec": 4
+        }
+      ]
+    },
+    "exclusive_offer": {
+      "name": "Ưu đãi & Quà tặng",
+      "description": "Tận dụng voucher hoặc quà tặng kèm hợp lệ mà không dùng kỹ thuật tạo khan hiếm giả tạo",
+      "templates": [
+        {
+          "id": "cta_eo_01",
+          "category": "exclusive_offer",
+          "template": "Số lượng quà tặng trong giỏ hàng có giới hạn, nhanh tay bấm đặt để không bỏ lỡ nhé!",
+          "example": "Số lượng quà tặng trong giỏ hàng có giới hạn, nhanh tay bấm đặt để không bỏ lỡ nhé!",
+          "compliance_note": "Không dùng đếm ngược giả, kêu gọi lịch sự",
+          "duration_sec": 4
+        },
+        {
+          "id": "cta_eo_02",
+          "category": "exclusive_offer",
+          "template": "Hôm nay đang có voucher trợ giá cực tốt trong giỏ hàng góc trái, chốt đơn ngay thôi!",
+          "example": "Hôm nay đang có voucher trợ giá cực tốt trong giỏ hàng góc trái, chốt đơn ngay thôi!",
+          "compliance_note": "Dựa trên tính năng voucher thực tế của TikTok Shop",
+          "duration_sec": 4
+        },
+        {
+          "id": "cta_eo_03",
+          "category": "exclusive_offer",
+          "template": "Bấm vào giỏ hàng ngay để săn combo dùng thử với mức giá cực kỳ ưu đãi!",
+          "example": "Bấm vào giỏ hàng ngay để săn combo dùng thử với mức giá cực kỳ ưu đãi!",
+          "compliance_note": "Rõ ràng về sản phẩm (combo dùng thử)",
+          "duration_sec": 4
+        },
+        {
+          "id": "cta_eo_04",
+          "category": "exclusive_offer",
+          "template": "Mỗi đơn hàng hôm nay đều kèm quà xinh, ghé giỏ hàng góc trái rước liền tay!",
+          "example": "Mỗi đơn hàng hôm nay đều kèm quà xinh, ghé giỏ hàng góc trái rước liền tay!",
+          "compliance_note": "Thông tin quà tặng trung thực",
+          "duration_sec": 4
+        }
+      ]
+    },
+    "social_proof": {
+      "name": "Bằng chứng cộng đồng & Đánh giá",
+      "description": "Kêu gọi xem đánh giá thực tế của người mua trước khi quyết định",
+      "templates": [
+        {
+          "id": "cta_sp_01",
+          "category": "social_proof",
+          "template": "Hàng nghìn đánh giá tích cực đang chờ bạn kiểm chứng trong giỏ hàng góc trái!",
+          "example": "Hàng nghìn đánh giá tích cực đang chờ bạn kiểm chứng trong giỏ hàng góc trái!",
+          "compliance_note": "Minh bạch cho người dùng đọc review thật",
+          "duration_sec": 4
+        },
+        {
+          "id": "cta_sp_02",
+          "category": "social_proof",
+          "template": "Bấm vào giỏ hàng để xem feedback thực tế từ những khách hàng đã dùng nhé!",
+          "example": "Bấm vào giỏ hàng để xem feedback thực tế từ những khách hàng đã dùng nhé!",
+          "compliance_note": "Xây dựng niềm tin trung thực",
+          "duration_sec": 4
+        },
+        {
+          "id": "cta_sp_03",
+          "category": "social_proof",
+          "template": "Sản phẩm được rất nhiều bạn tin dùng, trải nghiệm ngay qua giỏ hàng bên dưới!",
+          "example": "Sản phẩm được rất nhiều bạn tin dùng, trải nghiệm ngay qua giỏ hàng bên dưới!",
+          "compliance_note": "Tránh dùng từ 'số 1', dùng 'nhiều bạn tin dùng'",
+          "duration_sec": 4
+        }
+      ]
+    },
+    "consultation_guide": {
+      "name": "Tư vấn & Tương tác",
+      "description": "Khuyến khích để lại bình luận để nhận hỗ trợ giải đáp chuyên sâu",
+      "templates": [
+        {
+          "id": "cta_cg_01",
+          "category": "consultation_guide",
+          "template": "Để lại bình luận tình trạng của bạn hoặc bấm giỏ hàng để được hỗ trợ chu đáo nhất nhé!",
+          "example": "Để lại bình luận tình trạng của bạn hoặc bấm giỏ hàng để được hỗ trợ chu đáo nhất nhé!",
+          "compliance_note": "Tương tác tự nhiên, không cam kết chữa bệnh",
+          "duration_sec": 5
+        },
+        {
+          "id": "cta_cg_02",
+          "category": "consultation_guide",
+          "template": "Lưu video lại và ghé ngay giỏ hàng góc trái để bắt đầu hành trình chăm sóc sức khỏe hôm nay!",
+          "example": "Lưu video lại và ghé ngay giỏ hàng góc trái để bắt đầu hành trình chăm sóc sức khỏe hôm nay!",
+          "compliance_note": "Định vị lành mạnh, thúc đẩy lưu video tăng tương tác",
+          "duration_sec": 5
+        },
+        {
+          "id": "cta_cg_03",
+          "category": "consultation_guide",
+          "template": "Còn thắc mắc gì cứ để lại cmt bên dưới, hoặc bấm giỏ hàng để xem giải đáp chi tiết nha!",
+          "example": "Còn thắc mắc gì cứ để lại cmt bên dưới, hoặc bấm giỏ hàng để xem giải đáp chi tiết nha!",
+          "compliance_note": "Gần gũi, tôn trọng khách hàng",
+          "duration_sec": 4
+        }
+      ]
+    }
+  }
+}

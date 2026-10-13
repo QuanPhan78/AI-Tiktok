@@ -1,0 +1,24 @@
+# Không đẩy file chứa mật khẩu lên GitHub
+.env
+.env*.local
+
+# Thư mục cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Thư mục môi trường ảo
+venv/
+.venv/
+env/
+
+# Tài liệu văn bản cá nhân / Word
+*.docx
+*.doc
+*.pdf
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

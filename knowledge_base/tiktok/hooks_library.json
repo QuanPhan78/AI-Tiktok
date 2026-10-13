@@ -1,0 +1,158 @@
+{
+  "version": "1.0",
+  "description": "Thư viện Hook mở đầu video TikTok chuyển đổi cao cho thị trường Việt Nam",
+  "categories": {
+    "Problem-Agitation": {
+      "name": "Nỗi đau & Đẩy mạnh vấn đề",
+      "description": "Nhắm thẳng vào nỗi đau hoặc thói quen sai lầm phổ biến của khách hàng",
+      "templates": [
+        {
+          "id": "hook_pa_01",
+          "angle": "Problem-Agitation",
+          "template": "Nếu bạn đang gặp tình trạng {problem}, dừng ngay việc {wrong_habit} lại!",
+          "example": "Nếu bạn đang bị rụng tóc cả búi mỗi lần gội đầu, dừng ngay việc đổi dầu gội liên tục lại!",
+          "suitable_for": ["Chăm sóc tóc", "Trị mụn", "Sức khỏe"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_pa_02",
+          "angle": "Problem-Agitation",
+          "template": "Đừng để {problem} phá hỏng sự tự tin của bạn mỗi khi {situation}!",
+          "example": "Đừng để hơi thở có mùi phá hỏng sự tự tin của bạn mỗi khi gặp gỡ đối tác!",
+          "suitable_for": ["Chăm sóc răng miệng", "Nước hoa", "Thời trang"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_pa_03",
+          "angle": "Problem-Agitation",
+          "template": "Có phải bạn đã thử đủ mọi cách mà {problem} vẫn không hề cải thiện?",
+          "example": "Có phải bạn đã thử đủ loại kem dưỡng mà da vẫn khô ráp bong tróc?",
+          "suitable_for": ["Mỹ phẩm", "Dưỡng da", "Sức khỏe"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_pa_04",
+          "angle": "Problem-Agitation",
+          "template": "Sai lầm lớn nhất của 90% người khi bị {problem} là {mistake}.",
+          "example": "Sai lầm lớn nhất của 90% người bị mụn lưng là dùng sữa tắm có hạt chà xát mạnh.",
+          "suitable_for": ["Chăm sóc da body", "Sức khỏe cá nhân"],
+          "duration_sec": 3
+        }
+      ]
+    },
+    "Curiosity": {
+      "name": "Tò mò & Khám phá",
+      "description": "Kích thích sự tò mò, khám phá bí mật hoặc phương pháp mới lạ",
+      "templates": [
+        {
+          "id": "hook_cur_01",
+          "angle": "Curiosity",
+          "template": "Bí mật mà chuyên gia {field} ít khi chia sẻ về {topic}!",
+          "example": "Bí mật mà chuyên gia da liễu ít khi chia sẻ về cách giữ ẩm cho da suốt 12 giờ!",
+          "suitable_for": ["Làm đẹp", "Chăm sóc da", "Dinh dưỡng"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_cur_02",
+          "angle": "Curiosity",
+          "template": "Tại sao {target_audience} lại chuộng {product_type} hơn là {traditional_option}?",
+          "example": "Tại sao dân văn phòng lại chuộng bình nước tạo ẩm nano hơn máy xông truyền thống?",
+          "suitable_for": ["Gia dụng thông minh", "Lifestyle", "Sức khỏe"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_cur_03",
+          "angle": "Curiosity",
+          "template": "Món đồ nhỏ gọn này đã cứu cánh cho {target_audience} như thế nào?",
+          "example": "Món đồ nhỏ gọn này đã cứu cánh cho hội cú đêm hay mỏi mắt như thế nào?",
+          "suitable_for": ["Sản phẩm văn phòng", "Chăm sóc mắt", "Gadgets"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_cur_04",
+          "angle": "Curiosity",
+          "template": "Tôi cá là bạn chưa từng thấy cách {action} tiện lợi đến mức này!",
+          "example": "Tôi cá là bạn chưa từng thấy cách pha trà thảo mộc tiện lợi đến mức này!",
+          "suitable_for": ["Thực phẩm healthy", "Gia dụng", "Lifestyle"],
+          "duration_sec": 3
+        }
+      ]
+    },
+    "Statistics": {
+      "name": "Số liệu & Bằng chứng",
+      "description": "Tạo uy tín và độ sốc thông qua các con số thống kê hoặc khảo sát thực tế",
+      "templates": [
+        {
+          "id": "hook_stat_01",
+          "angle": "Statistics",
+          "template": "Hơn 85% {target_audience} đang mắc phải thói quen này mà không hề hay biết!",
+          "example": "Hơn 85% người làm việc bàn giấy đang ngồi sai tư thế gây nhức mỏi thắt lưng!",
+          "suitable_for": ["Thiết bị công thái học", "Sức khỏe", "Thể thao"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_stat_02",
+          "angle": "Statistics",
+          "template": "Theo khảo sát thực tế, 8/10 người cảm nhận sự khác biệt rõ rệt sau 2 tuần trải nghiệm.",
+          "example": "Theo khảo sát thực tế, 8/10 người cảm nhận giấc ngủ ngon và sâu hơn sau 2 tuần trải nghiệm gối thảo mộc.",
+          "suitable_for": ["Sản phẩm giấc ngủ", "Chăm sóc sức khỏe", "Healthy living"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_stat_03",
+          "angle": "Statistics",
+          "template": "Trung bình mỗi ngày bạn tiêu tốn {amount} chỉ vì chưa biết giải pháp này.",
+          "example": "Trung bình mỗi ngày bạn tiêu tốn 50k cà phê chỉ vì chưa biết giải pháp nạp năng lượng tự nhiên này.",
+          "suitable_for": ["Thức uống dinh dưỡng", "Tiết kiệm", "Lifestyle"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_stat_04",
+          "angle": "Statistics",
+          "template": "3 con số bất ngờ về {topic} mà bạn cần biết ngay hôm nay!",
+          "example": "3 con số bất ngờ về lượng vi khuẩn trên màn hình điện thoại mà bạn cần biết ngay hôm nay!",
+          "suitable_for": ["Vệ sinh cá nhân", "Phụ kiện", "Gia đình"],
+          "duration_sec": 3
+        }
+      ]
+    },
+    "Question": {
+      "name": "Câu hỏi gợi mở & Tương tác",
+      "description": "Đặt câu hỏi trúng tâm lý người xem để dừng lướt trong 3 giây đầu",
+      "templates": [
+        {
+          "id": "hook_q_01",
+          "angle": "Question",
+          "template": "Bạn đã bao giờ tự hỏi vì sao {problem_situation} dù đã chăm sóc rất kỹ?",
+          "example": "Bạn đã bao giờ tự hỏi vì sao dù ngủ đủ 8 tiếng nhưng sáng dậy vẫn uể oải?",
+          "suitable_for": ["Sức khỏe", "Thực phẩm bổ sung", "Giấc ngủ"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_q_02",
+          "angle": "Question",
+          "template": "Ai bảo {common_belief} thì không thể {desired_outcome}?",
+          "example": "Ai bảo người bận rộn cả ngày thì không thể ăn uống lành mạnh và đủ chất?",
+          "suitable_for": ["Bữa ăn tiện lợi", "Dinh dưỡng", "Lifestyle"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_q_03",
+          "angle": "Question",
+          "template": "Bạn đang {action} đúng cách hay chỉ đang làm theo thói quen bao năm nay?",
+          "example": "Bạn đang gội đầu đúng cách hay chỉ đang làm theo thói quen khiến tóc ngày càng yếu?",
+          "suitable_for": ["Chăm sóc tóc", "Mỹ phẩm", "Vệ sinh"],
+          "duration_sec": 3
+        },
+        {
+          "id": "hook_q_04",
+          "angle": "Question",
+          "template": "Nếu chỉ được chọn 1 món đồ mang theo khi {situation}, bạn sẽ chọn gì?",
+          "example": "Nếu chỉ được chọn 1 món đồ giữ ấm cơ thể trong mùa đông này, bạn sẽ chọn gì?",
+          "suitable_for": ["Thời trang", "Phụ kiện", "Du lịch"],
+          "duration_sec": 3
+        }
+      ]
+    }
+  }
+}

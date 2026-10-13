@@ -1,0 +1,23 @@
+# Thư viện cần thiết cho dự án
+
+# Gọi AI (OpenAI GPT)
+openai
+
+# Gọi AI (Anthropic Claude) - backup
+anthropic
+
+# Framework AI Agent
+langchain
+langchain-openai
+langgraph
+
+# Framework AI Agent (phương án 2)
+crewai
+
+# Web API & HTTP Client
+fastapi
+uvicorn
+httpx
+
+# Đọc file .env (lưu API key an toàn)
+python-dotenv

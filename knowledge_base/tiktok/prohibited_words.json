@@ -1,0 +1,115 @@
+{
+  "version": "1.0",
+  "description": "Danh mục từ khóa cấm và tuyên bố vi phạm chính sách quảng cáo TikTok Shop Việt Nam",
+  "categories": {
+    "absolute_claims": {
+      "name": "Khẳng định tuyệt đối / Tuyên bố số 1",
+      "severity": "high",
+      "policy_rule": "Nghiêm cấm khẳng định tuyệt đối, sản phẩm độc tôn hoặc đứng đầu khi không có tài liệu chứng minh được cơ quan thẩm quyền cấp phép.",
+      "suggested_alternatives": [
+        "Sản phẩm được nhiều người tin dùng",
+        "Lựa chọn yêu thích của nhiều khách hàng",
+        "Thương hiệu uy tín",
+        "Hiệu quả rõ rệt khi duy trì sử dụng"
+      ],
+      "words": [
+        "số 1",
+        "số một",
+        "top 1",
+        "top một",
+        "duy nhất",
+        "tuyệt đối",
+        "vĩnh viễn",
+        "hoàn hảo 100%",
+        "cam kết 100%",
+        "100% hiệu quả",
+        "hiệu quả 100%",
+        "tốt nhất",
+        "đỉnh nhất",
+        "vô địch"
+      ]
+    },
+    "medical_cure_claims": {
+      "name": "Cam kết trị khỏi / Y tế & Thuốc quá mức",
+      "severity": "high",
+      "policy_rule": "Thực phẩm bảo vệ sức khỏe và mỹ phẩm không được tuyên bố điều trị, chữa khỏi, dứt điểm như thuốc chữa bệnh.",
+      "suggested_alternatives": [
+        "Hỗ trợ cải thiện",
+        "Giúp làm dịu và giảm cảm giác khó chịu",
+        "Chăm sóc phục hồi",
+        "Bổ sung dưỡng chất cho cơ thể"
+      ],
+      "words": [
+        "trị dứt điểm",
+        "chữa dứt điểm",
+        "chữa khỏi hoàn toàn",
+        "chữa khỏi 100%",
+        "đặc trị",
+        "khỏi hẳn",
+        "hết tiệt",
+        "thần dược",
+        "thuốc tiên",
+        "điều trị triệt để",
+        "triệt tiêu tận gốc",
+        "trị khỏi hoàn toàn",
+        "dứt điểm 100%"
+      ]
+    },
+    "exaggerated_timelines": {
+      "name": "Cam kết thời gian tức thì / Phóng đại hiệu quả",
+      "severity": "medium",
+      "policy_rule": "Nghiêm cấm phóng đại hiệu quả trong thời gian ngắn không thực tế (sau 1 đêm, tức thì, sau 1 lần).",
+      "suggested_alternatives": [
+        "Cảm nhận sự thay đổi tích cực sau một thời gian kiên trì",
+        "Giúp cải thiện dần qua từng ngày",
+        "Hiệu quả tối ưu khi dùng đều đặn"
+      ],
+      "words": [
+        "ngay lập tức",
+        "sau 1 đêm",
+        "chỉ sau 1 đêm",
+        "sau 1 lần dùng",
+        "bật tông sau 1 lần",
+        "giảm ngay tức thì",
+        "sau 3 ngày khỏi hẳn",
+        "sau 7 ngày khỏi hẳn",
+        "hiệu quả tức thì"
+      ]
+    },
+    "unverified_safety": {
+      "name": "Tuyên bố an toàn tuyệt đối không kiểm chứng",
+      "severity": "medium",
+      "policy_rule": "Không được cam kết 100% không dị ứng hoặc không tác dụng phụ cho mọi đối tượng vì phụ thuộc cơ địa.",
+      "suggested_alternatives": [
+        "Thành phần lành tính, dịu nhẹ",
+        "Được kiểm nghiệm da liễu",
+        "Phù hợp với đa số làn da"
+      ],
+      "words": [
+        "không tác dụng phụ",
+        "an toàn tuyệt đối",
+        "100% lành tính không kích ứng",
+        "phù hợp 100% mọi cơ địa",
+        "không bao giờ dị ứng",
+        "hoàn toàn không kích ứng"
+      ]
+    },
+    "forbidden_guarantees": {
+      "name": "Cam kết hoàn tiền phi thực tế / Lừa dối người tiêu dùng",
+      "severity": "high",
+      "policy_rule": "Nghiêm cấm cam kết hoàn tiền 100% hoặc 200% nếu không khỏi/không hiệu quả nhằm lôi kéo mua hàng.",
+      "suggested_alternatives": [
+        "Chính sách đổi trả minh bạch theo quy định sàn TikTok Shop",
+        "Hỗ trợ tư vấn tận tâm trong suốt quá trình sử dụng"
+      ],
+      "words": [
+        "không hiệu quả hoàn tiền 100%",
+        "hoàn tiền 200%",
+        "đảm bảo 100%",
+        "bảo đảm khỏi 100%",
+        "cam kết hoàn tiền nếu không khỏi",
+        "cam kết khỏi 100%"
+      ]
+    }
+  }
+}
