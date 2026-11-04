@@ -1,0 +1,3 @@
+-r requirements.txt
+# Needed to exercise Long's service from the shared tests
+notion-client==2.2.1

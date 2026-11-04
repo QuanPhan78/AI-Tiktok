@@ -1,0 +1,7 @@
+# Optional: only for the old comparison prototypes / ngrok tunnel
+-r requirements.txt
+openai
+anthropic
+langchain-openai
+crewai
+pyngrok

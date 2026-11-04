@@ -1,85 +1,37 @@
-"""
-PROMPT: SCRIPT AGENT
-====================
-Agent viết kịch bản TikTok 30 giây từ insight nghiên cứu.
-Tích hợp Knowledge Base: Hook Templates, CTA Templates, Brand Guidelines, Policy Guardrails.
+"""Canonical prompt templates used by the legacy graph and the reviewed studio."""
 
-Đầu vào (Input):  Thông tin sản phẩm + JSON insight từ Research Agent.
-Đầu ra (Output):  JSON kịch bản hoàn chỉnh theo cấu trúc chuẩn.
-"""
+def build_legacy_script_prompt(*, product, research_raw, fix_note, brand_summary, policy_summary, hook_templates_str, cta_templates_str, tone_note):
+    return f"""Viet kich ban TikTok 30 giay. Tra ve JSON thuan tuy, khong them text gi ngoai JSON.
 
-SCRIPT_SYSTEM_PROMPT = """
-Bạn là biên kịch video thương mại chuyên nghiệp, chuyên sản xuất nội dung
-cho nền tảng TikTok tại thị trường Việt Nam.
+San pham: {product.get('name', '')}
+Thuong hieu: {product.get('brand_name', '')}
+Gia: {product.get('price', '')} VND
+Link: {product.get('product_link', '')}
+Nghien cuu: {research_raw[:600]}{fix_note}
 
-Nguyên tắc viết kịch bản:
-- Giọng điệu: Chuyên nghiệp, đáng tin cậy, rõ ràng — KHÔNG dùng tiếng lóng.
-- Cấu trúc chuẩn: Hook 3 giây → Body 22 giây → CTA 5 giây.
-- Hook phải gây chú ý ngay lập tức, sử dụng cấu trúc hook hiệu quả từ thư viện.
-- CTA phải tuân thủ chính sách TikTok Shop, điều hướng tự nhiên vào giỏ hàng vàng.
-- TUYỆT ĐỐI TUÂN THỦ CHÍNH SÁCH TIKTOK SHOP: Không dùng từ cấm (cam kết 100%, trị dứt điểm, số 1, vĩnh viễn, chữa khỏi hoàn toàn...).
-- Đầu ra PHẢI là JSON thuần túy, không thêm text ngoài JSON.
-"""
+{brand_summary}
 
-SCRIPT_USER_PROMPT = """
-Viết kịch bản TikTok 30 giây cho sản phẩm dưới đây.
+{policy_summary}
 
-THÔNG TIN SẢN PHẨM:
-- Tên: {product_name}
-- Giá: {price} VND
-- Thương hiệu: {brand_name}
-- Link: {product_link}
+MAU HOOK GOI Y (Tham khao de tao Hook hap dan trong 3 giay dau):
+{hook_templates_str}
 
-KẾT QUẢ NGHIÊN CỨU:
-{research_result}
+MAU CTA CHUAN TIKTOK SHOP (Dieu huong tu nhien vao gio hang vang):
+{cta_templates_str}
 
-QUY TẮC THƯƠNG HIỆU & GIỌNG ĐIỆU:
-{brand_guidelines}
-
-QUY TẮC CHÍNH SÁCH QUẢNG CÁO TIKTOK SHOP (BẮT BUỘC):
-{policy_rules}
-
-MẪU HOOK GỢI Ý TỪ KNOWLEDGE BASE:
-{hook_templates}
-
-MẪU CTA GỢI Ý TỪ KNOWLEDGE BASE:
-{cta_templates}
-
-{fix_instructions_block}
-
-YÊU CẦU:
-Trả về JSON theo đúng cấu trúc sau, không thêm bất kỳ text nào ngoài JSON:
-
+Tra ve JSON:
 {{
-  "hook_text": "Câu mở đầu — tối đa 15 từ, gây chú ý ngay",
-  "voice_over_text": "Toàn bộ lời thoại đọc voice từ đầu đến cuối (30 giây ~ 80-90 từ)",
-  "text_on_screen": "Chữ hiển thị trên màn hình — ngắn, tối đa 6 từ mỗi cảnh",
+  "hook_text": "Cau mo dau, toi da 15 tu",
+  "voice_over_text": "Toan bo loi thoai 30 giay ~ 85 tu",
+  "text_on_screen": "Chu hien tren man hinh, ngan gon",
   "scenes": [
-    {{
-      "time": "0:00 - 0:03",
-      "visual": "Mô tả hình ảnh/hành động cần quay",
-      "audio": "Lời thoại tương ứng đoạn này"
-    }},
-    {{
-      "time": "0:03 - 0:25",
-      "visual": "Mô tả hình ảnh/hành động cần quay",
-      "audio": "Lời thoại tương ứng đoạn này"
-    }},
-    {{
-      "time": "0:25 - 0:30",
-      "visual": "Cảnh CTA — chỉ tay vào giỏ hàng hoặc link bio",
-      "audio": "Lời kêu gọi hành động tuân thủ chính sách giỏ hàng TikTok"
-    }}
+    {{"time": "0:00-0:03", "visual": "...", "audio": "..."}},
+    {{"time": "0:03-0:25", "visual": "...", "audio": "..."}},
+    {{"time": "0:25-0:30", "visual": "CTA - chi tay vao gio hang", "audio": "..."}}
   ],
-  "image_generation_prompt_en": "English prompt for AI image generation, cinematic style, product-focused, 4k quality",
-  "bgm_vibe": "Mô tả nhạc nền phù hợp (Ví dụ: Nhạc corporate nhẹ nhàng, chuyên nghiệp)",
-  "post_caption": "Caption đăng bài TikTok — tối đa 150 ký tự, có emoji phù hợp"
+  "image_generation_prompt_en": "English prompt for AI image, cinematic, 4k",
+  "bgm_vibe": "Mo ta nhac nen",
+  "post_caption": "Caption dang bai TikTok ngan gon co emoji"
 }}
-
-LƯU Ý QUAN TRỌNG:
-- Giọng điệu: Chuyên nghiệp. KHÔNG dùng từ lóng.
-- TUYỆT ĐỐI KHÔNG dùng từ ngữ vi phạm chính sách (trị dứt điểm, cam kết 100%, số 1, vĩnh viễn, khỏi hẳn, thuốc tiên, thần dược, an toàn tuyệt đối).
-- voice_over_text phải đọc vừa đúng 30 giây (thử đọc to để kiểm tra).
-- image_generation_prompt_en phải bằng tiếng Anh chuẩn.
-- Chỉ trả về JSON thuần túy.
-"""
+Giong dieu: {tone_note}
+LUU Y DAC BIET: TUYET DOI KHONG dung cac tu cam TikTok Shop nhu: cam ket 100%, tri dut diem, chua khoi hoan toan, so 1, vinh vien, tuyet doi, an toan tuyet doi."""

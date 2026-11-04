@@ -1,0 +1,30 @@
+services:
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: ai-automation-n8n
+    ports:
+      - "127.0.0.1:5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    restart: unless-stopped
+
+  python-service:
+    build:
+      context: ./python-service
+    container_name: ai-automation-python
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - NOTION_TOKEN=${NOTION_TOKEN}
+      - NOTION_DATABASE_ID=${NOTION_DATABASE_ID}
+      - NOTION_V2_DATABASE_ID=${NOTION_V2_DATABASE_ID:-}
+      - MASTER_DB_PROVIDER=${MASTER_DB_PROVIDER}
+      - HANDOFF_DATA_DIR=/data
+    volumes:
+      - handoff_data:/data
+    restart: unless-stopped
+
+volumes:
+  n8n_data:
+  handoff_data:

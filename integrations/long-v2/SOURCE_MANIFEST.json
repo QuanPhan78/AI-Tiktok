@@ -1,0 +1,22 @@
+{
+  "source_repository": "https://github.com/LongVu-AI/AI_Content_Automation",
+  "description": "Local Content Studio v2 integration snapshot, not an upstream release. Runtime sources unchanged; packaged Compose binds loopback.",
+  "packaged_on": "2026-11-05",
+  "files_sha256": {
+    ".dockerignore": "94681b6ffe1eb9943434b1c42bc8f5c9d02490588517f68e3ef325e1e4accd25",
+    ".env.example": "3e5ea92dfd250d7a9691ec9460f6c3725d68d99c0271afc52e9ffc3ca1f58354",
+    "config/content-webhook.conf": "a496babdeda581ec48892e59fd5cc298fadc07c4336d808bd53024df43072883",
+    "docker-compose.acceptance.yml": "b0b76588bdb7536b4802e9e6c589adc3b2011e0d61f2694cac39365d813d4ff4",
+    "docker-compose.yml": "36cdf2961ce182b2dc5be42d0167fd657313ff9634ab993f4cef60fc010df5ab",
+    "n8n/Content Studio - AI Agent Callback v2.json": "ede819a0a7004f29a15cac0a05b5df2d379726365ee91b5eff1f6d1ed7df438d",
+    "python-service/.dockerignore": "94681b6ffe1eb9943434b1c42bc8f5c9d02490588517f68e3ef325e1e4accd25",
+    "python-service/app/contracts_v2.py": "7f0bd11208899d91029dd1e5a780e4ced1f1816d856133b02dc66e3c390c98d2",
+    "python-service/app/handoff_v2.py": "3cd3b954e0134041360b49f7d438abff3cec972f2f1cd525c2db2b328ae38829",
+    "python-service/app/main.py": "2a51f149880983dae1210823f6a38556037185c3f05e8be9cb9082555a68ca6b",
+    "python-service/app/notion_client.py": "2f67f0e07eef52bbc60026d5a6f79612b6c0f977c0b7565ad837bdb502cf030d",
+    "python-service/Dockerfile": "7c12c0455370676584d25b0c80c6d4bf511455e43c66d7a62b5aa825e2cd36cb",
+    "python-service/requirements.txt": "b21778759b30fd9330100cab7f045fc49d4f67ee04c8f1713236b3a9f6d6b2e8",
+    "README.md": "c0da474ff5629d804504dc6c354df81c51b252de7df5867e3efce051e148fafa",
+    "scripts/acceptance.py": "d6a4b954da354b30d24d8e9e1dae2a2d3b0ad07dea1e0043666fb74b215bc997"
+  }
+}

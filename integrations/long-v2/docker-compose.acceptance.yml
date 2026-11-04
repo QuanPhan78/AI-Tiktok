@@ -1,0 +1,14 @@
+# Optional webhook-only gateway. n8n Header Auth must be configured first.
+services:
+  python-service:
+    environment:
+      - CONTENT_V2_ACCEPTANCE_MODE=1
+  content-webhook-gateway:
+    image: nginx:stable-alpine
+    ports:
+      - "127.0.0.1:5679:80"
+    volumes:
+      - ./config/content-webhook.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - n8n
+    restart: unless-stopped

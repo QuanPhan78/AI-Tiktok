@@ -885,7 +885,7 @@ class TestWebhookIntegration(TestCase):
         import run_server
         importlib.reload(run_server)
         self.assertTrue(hasattr(run_server, "PORT"))
-        self.assertEqual(run_server.PORT, 8000)
+        self.assertEqual(run_server.PORT, int(os.getenv("PORT", "8001")))
 
     def test_thread_cleans_up_from_active_threads_in_finally_block(self):
         """When background pipeline completes, the thread removes itself from _active_threads."""

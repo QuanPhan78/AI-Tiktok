@@ -1,0 +1,124 @@
+{
+  "schema_version": "2.0",
+  "request_id": "demo_handoff_v2",
+  "revision": 1,
+  "status": "success",
+  "product": {
+    "name": "Hộp đựng bút (dữ liệu kiểm thử)",
+    "uses": "Đựng bút trên bàn",
+    "price": "59.000 đồng",
+    "product_link": "https://example.com/test-product",
+    "images": [
+      {
+        "id": "demo-product",
+        "filename": "product.png",
+        "sha256": "74b0c61828abf9c34abcaef98e33d0512e72427975827ef36c41c73e4df479e5",
+        "size": 112,
+        "media_type": "image/png"
+      }
+    ]
+  },
+  "character": {
+    "id": "NV5",
+    "name": "Trang",
+    "age": 28,
+    "gender": "female",
+    "voice": "Nữ trẻ, gọn gàng, thân thiện",
+    "setting": "a tidy home-office desk corner in a small apartment, white wall, a closed laptop, a notebook, a small potted plant and a warm desk lamp.",
+    "outfit": "a light-beige blazer over a white blouse, dark-grey tailored trousers, small pearl earrings and a slim wristwatch",
+    "consistency_block": "CONSISTENCY BLOCK: Trang, a Vietnamese woman about 28, heart-shaped face, neat natural makeup, straight black hair just past the shoulders with a side part, wearing a light-beige blazer over a white blouse, dark-grey tailored trousers, small pearl earrings and a slim wristwatch. Main location: a tidy home-office desk corner in a small apartment, white wall, a closed laptop, a notebook, a small potted plant and a warm desk lamp. Style: vertical handheld smartphone-like look, shallow depth of field, soft natural realism, gentle camera movement. Voice: young Vietnamese female, polished, friendly, clear, medium pace, the same voice in every clip. No background music, only voice and quiet natural sounds. Product: [PRODUCT].",
+    "image": {
+      "id": "NV5",
+      "filename": "NV5_Trang.png",
+      "sha256": "2d445dacf431e7e90723b96e41218c4052028fd8593a11fa42476bde3d6afd43",
+      "size": 8811758,
+      "media_type": "image/png"
+    },
+    "audio_mode": "speaking"
+  },
+  "scenes": [
+    {
+      "id": "1",
+      "order": 1,
+      "duration_seconds": 8,
+      "part": "Hoàn cảnh",
+      "action_vi": "Nhân vật sắp xếp bút trên bàn.",
+      "dialogue_vi": "Mình muốn góc bàn gọn hơn nên thử sắp xếp lại bút, nhờ vậy việc tìm đồ cũng thuận tiện hơn mỗi ngày.",
+      "prompt_en": "CONSISTENCY BLOCK: Trang, a Vietnamese woman about 28, heart-shaped face, neat natural makeup, straight black hair just past the shoulders with a side part, wearing a light-beige blazer over a white blouse, dark-grey tailored trousers, small pearl earrings and a slim wristwatch. Main location: a tidy home-office desk corner in a small apartment, white wall, a closed laptop, a notebook, a small potted plant and a warm desk lamp. Style: vertical handheld smartphone-like look, shallow depth of field, soft natural realism, gentle camera movement. Voice: young Vietnamese female, polished, friendly, clear, medium pace, the same voice in every clip. No background music, only voice and quiet natural sounds. Product: no product visible in this clip.\nReference images: the attached product photo shows the product, and the attached character image shows the character. Keep the product and the character exactly as shown in these images.\nLighting: soft natural daylight\n(a) The character stands at the desk, gently arranges pens, filmed with a stable medium smartphone shot in natural realism. Quiet room sounds. Stable pose for the first and last half second. She says the line in Vietnamese, once, clearly, at a calm pace, and starts speaking after half a second.\n(b) \"Mình muốn góc bàn gọn hơn nên thử sắp xếp lại bút, nhờ vậy việc tìm đồ cũng thuận tiện hơn mỗi ngày.\"\nAspect ratio 9:16. Stable pose for the first and last half second. No music. No watermark, no logo, no icons, no on-screen text, no subtitles.",
+      "overlay_text": ""
+    },
+    {
+      "id": "2",
+      "order": 2,
+      "duration_seconds": 8,
+      "part": "Giới thiệu",
+      "action_vi": "Nhân vật sắp xếp bút trên bàn.",
+      "dialogue_vi": "Mình muốn góc bàn gọn hơn nên thử sắp xếp lại bút, nhờ vậy việc tìm đồ cũng thuận tiện hơn mỗi ngày.",
+      "prompt_en": "CONSISTENCY BLOCK: Trang, a Vietnamese woman about 28, heart-shaped face, neat natural makeup, straight black hair just past the shoulders with a side part, wearing a light-beige blazer over a white blouse, dark-grey tailored trousers, small pearl earrings and a slim wristwatch. Main location: a tidy home-office desk corner in a small apartment, white wall, a closed laptop, a notebook, a small potted plant and a warm desk lamp. Style: vertical handheld smartphone-like look, shallow depth of field, soft natural realism, gentle camera movement. Voice: young Vietnamese female, polished, friendly, clear, medium pace, the same voice in every clip. No background music, only voice and quiet natural sounds. Product: a simple pen holder, exactly as in the attached reference photo, same shape, colors and proportions.\nReference images: the attached product photo shows the product, and the attached character image shows the character. Keep the product and the character exactly as shown in these images.\nLighting: soft natural daylight\n(a) The character stands at the desk, gently arranges pens, filmed with a stable medium smartphone shot in natural realism. Quiet room sounds. Stable pose for the first and last half second. She says the line in Vietnamese, once, clearly, at a calm pace, and starts speaking after half a second.\n(b) \"Mình muốn góc bàn gọn hơn nên thử sắp xếp lại bút, nhờ vậy việc tìm đồ cũng thuận tiện hơn mỗi ngày.\"\nAspect ratio 9:16. Stable pose for the first and last half second. No music. No watermark, no logo, no icons, no on-screen text, no subtitles.",
+      "overlay_text": "Hộp đựng bút"
+    },
+    {
+      "id": "3",
+      "order": 3,
+      "duration_seconds": 8,
+      "part": "Công dụng",
+      "action_vi": "Nhân vật sắp xếp bút trên bàn.",
+      "dialogue_vi": "Mình muốn góc bàn gọn hơn nên thử sắp xếp lại bút, nhờ vậy việc tìm đồ cũng thuận tiện hơn mỗi ngày.",
+      "prompt_en": "CONSISTENCY BLOCK: Trang, a Vietnamese woman about 28, heart-shaped face, neat natural makeup, straight black hair just past the shoulders with a side part, wearing a light-beige blazer over a white blouse, dark-grey tailored trousers, small pearl earrings and a slim wristwatch. Main location: a tidy home-office desk corner in a small apartment, white wall, a closed laptop, a notebook, a small potted plant and a warm desk lamp. Style: vertical handheld smartphone-like look, shallow depth of field, soft natural realism, gentle camera movement. Voice: young Vietnamese female, polished, friendly, clear, medium pace, the same voice in every clip. No background music, only voice and quiet natural sounds. Product: a simple pen holder, exactly as in the attached reference photo, same shape, colors and proportions.\nReference images: the attached product photo shows the product, and the attached character image shows the character. Keep the product and the character exactly as shown in these images.\nLighting: soft natural daylight\n(a) The character stands at the desk, gently arranges pens, filmed with a stable medium smartphone shot in natural realism. Quiet room sounds. Stable pose for the first and last half second. She says the line in Vietnamese, once, clearly, at a calm pace, and starts speaking after half a second.\n(b) \"Mình muốn góc bàn gọn hơn nên thử sắp xếp lại bút, nhờ vậy việc tìm đồ cũng thuận tiện hơn mỗi ngày.\"\nAspect ratio 9:16. Stable pose for the first and last half second. No music. No watermark, no logo, no icons, no on-screen text, no subtitles.",
+      "overlay_text": ""
+    },
+    {
+      "id": "4",
+      "order": 4,
+      "duration_seconds": 8,
+      "part": "Chốt đơn",
+      "action_vi": "Nhân vật mỉm cười nhẹ.",
+      "dialogue_vi": "Sản phẩm có ngay trên TikTok Shop, bấm vào giỏ hàng bên dưới góc trái màn hình để tham khảo sản phẩm bên chúng tôi nhé!",
+      "prompt_en": "CONSISTENCY BLOCK: Trang, a Vietnamese woman about 28, heart-shaped face, neat natural makeup, straight black hair just past the shoulders with a side part, wearing a light-beige blazer over a white blouse, dark-grey tailored trousers, small pearl earrings and a slim wristwatch. Main location: a tidy home-office desk corner in a small apartment, white wall, a closed laptop, a notebook, a small potted plant and a warm desk lamp. Style: vertical handheld smartphone-like look, shallow depth of field, soft natural realism, gentle camera movement. Voice: young Vietnamese female, polished, friendly, clear, medium pace, the same voice in every clip. No background music, only voice and quiet natural sounds. Product: a simple pen holder, exactly as in the attached reference photo, same shape, colors and proportions.\nReference images: the attached product photo shows the product, and the attached character image shows the character. Keep the product and the character exactly as shown in these images.\nLighting: soft natural daylight\n(a) The character stands at the desk, gently arranges pens, filmed with a stable medium smartphone shot in natural realism. Quiet room sounds. Stable pose for the first and last half second. She says the line in Vietnamese, once, clearly, at a calm pace, and starts speaking after half a second.\n(b) \"Sản phẩm có ngay trên TikTok Shop, bấm vào giỏ hàng bên dưới góc trái màn hình để tham khảo sản phẩm bên chúng tôi nhé!\"\nAspect ratio 9:16. Stable pose for the first and last half second. No music. No watermark, no logo, no icons, no on-screen text, no subtitles.",
+      "overlay_text": "59.000 đồng"
+    }
+  ],
+  "publishing": {
+    "slogans": [
+      "Góc bàn gọn gàng",
+      "Bút có chỗ riêng",
+      "Gọn hơn mỗi ngày",
+      "Nhẹ nhàng sắp xếp",
+      "Một góc nhỏ ngăn nắp"
+    ],
+    "captions": [
+      "Góc bàn của mình. Bấm giỏ hàng nhé!",
+      "Góc bàn của mình nè. Bấm giỏ hàng nhé!",
+      "Góc bàn của mình nè nè. Bấm giỏ hàng nhé!"
+    ],
+    "selected_caption": 0,
+    "hashtags": [
+      "#hopdungbut",
+      "#but",
+      "#gocban",
+      "#ngannap",
+      "#sapxep",
+      "#vanphong",
+      "#muasam",
+      "#review",
+      "#tiktokshop"
+    ],
+    "pinned_comment": "Tham khảo ở giỏ hàng: https://example.com/test-product",
+    "bgm_note": "Chỉ thêm một bản nhạc nền khi dựng, âm lượng nhỏ hơn giọng nói."
+  },
+  "qc": {
+    "qc_score": 9.0,
+    "passed": true,
+    "feedback": "Nội dung phù hợp dữ liệu đã duyệt.",
+    "warnings": [
+      "Mỗi clip dự kiến 8 giây; cần kiểm tra giọng nói trong clip thật, đặc biệt câu chốt đơn."
+    ],
+    "rules_version": "bao-7steps-v2"
+  },
+  "metadata": {
+    "created_at": "2026-11-05T00:00:00+00:00",
+    "model_used": "fake-test",
+    "session_id": "synthetic-example",
+    "synthetic": true
+  }
+}

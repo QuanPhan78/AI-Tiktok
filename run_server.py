@@ -2,8 +2,8 @@
 RUN_SERVER.PY
 =============
 Chay 1 lenh nay la xong tat ca:
-  - Khoi dong FastAPI server tren cong 8000
-  - Tao duong ham Ngrok de Long goi tu may khac
+  - Khoi dong FastAPI va Content Studio tren cong 8001
+  - Chi tao Ngrok khi ENABLE_NGROK=1
 
 Cach dung:
   python run_server.py
@@ -22,7 +22,7 @@ if os.path.exists(_env_path):
 else:
     load_dotenv()
 
-PORT = 8000
+PORT = int(os.getenv("PORT", "8001"))
 
 
 def start_ngrok():
@@ -71,13 +71,14 @@ if __name__ == "__main__":
     print(f"API Docs: http://localhost:{PORT}/docs")
 
     # Chay ngrok trong thread rieng de khong block server
-    ngrok_thread = threading.Thread(target=start_ngrok, daemon=True)
-    ngrok_thread.start()
+    if os.getenv("ENABLE_NGROK", "0") == "1":
+        ngrok_thread = threading.Thread(target=start_ngrok, daemon=True)
+        ngrok_thread.start()
 
     # Khoi dong server chinh
     uvicorn.run(
         "api.main:app",
-        host="0.0.0.0",
+        host=os.getenv("HOST", "127.0.0.1"),
         port=PORT,
         reload=False,
         log_level="warning",  # Giam noise log

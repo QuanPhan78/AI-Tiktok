@@ -47,7 +47,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://127.0.0.1:8001", "http://localhost:8001"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -525,3 +525,23 @@ def root():
         "health": "/health",
         "generate": "POST /generate",
     }
+
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
+from api.studio import router as studio_router, get_store as studio_store
+
+app.include_router(studio_router)
+_web = Path(__file__).resolve().parents[1] / "web"
+app.mount("/static", StaticFiles(directory=_web), name="studio-static")
+
+
+@app.get("/app", include_in_schema=False)
+def studio_page():
+    return FileResponse(_web / "index.html")
+
+
+@app.on_event("startup")
+def recover_studio_tasks():
+    studio_store().recover()

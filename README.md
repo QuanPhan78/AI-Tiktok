@@ -1,109 +1,50 @@
-# 🎬 TikTok AI Agent — Hệ Thống Tự Động Hóa Kịch Bản & Guardrails TikTok
+# Content Studio v2 — AI Content & TikTok Automation
 
-Hệ thống AI Agent thông minh sử dụng **LangGraph**, **FastAPI** và **Google Gemini** để tự động nghiên cứu sản phẩm, tạo kịch bản video TikTok 30s chất lượng cao, chọn hashtag SEO, kiểm duyệt từ cấm chính sách (Policy Guardrails) và tự động đồng bộ qua Webhook n8n / Notion.
+Web tiếng Việt để nhập sản phẩm, duyệt nội dung theo **7 bước** và xuất prompt cho **4 hoặc 5 cảnh, mỗi cảnh dự kiến 8 giây**. Có lịch sử phiên, ảnh tham chiếu và bộ dữ liệu bàn giao cho automation.
 
----
+**Bảo và Long bắt đầu tại [Bài hướng dẫn bàn giao và chạy thử](docs/HANDOFF_CONTENT_STUDIO_V2.md).** Bài giải thích nguyên lý, cách cài đặt, việc của từng người và điều kiện nghiệm thu.
 
-## 🌟 Tính Năng Nổi Bật
-
-- **🧠 4-Node LangGraph Pipeline**:
-  - `Research Agent`: Phân tích sản phẩm, insight khách hàng mục tiêu, tìm USP và góc tiếp cận TikTok.
-  - `Script Agent`: Viết kịch bản video 30s chuyên nghiệp (Hook, Voice-over, Text-on-screen, Phân cảnh visual, Image prompt cho AI video).
-  - `Hashtag Agent`: Tự động tạo 6–8 hashtag tối ưu TikTok SEO theo 3 tầng (Thương hiệu, Ngành hàng, Đối tượng).
-  - `QC Agent`: Tự động chấm điểm 5 tiêu chí nội dung (Hook, USP, CTA, Tone, Chính sách).
-- **🛡️ TikTok Knowledge Base & Policy Guardrails**:
-  - **16 Hooks Library**: Mẫu mở đầu video chia theo 4 góc tâm lý (Nỗi đau, Tò mò, Số liệu, Câu hỏi).
-  - **14 CTA Templates**: Mẫu kêu gọi hành động chuẩn giỏ hàng TikTok Shop, ưu đãi, bằng chứng uy tín.
-  - **48 Từ cấm & Từ phóng đại**: Bộ lọc Regex Deterministic nhận diện từ cấm y tế/cam kết quá đà trên TikTok Shop VN.
-  - **Chống lách luật thông minh**: Nhận diện leetspeak (`t | r | i`, `t - r - i`), bắt hashtag dính liền (`#tridutdiem`), chuẩn hóa Unicode (NFC/NFD), không bắt nhầm số đếm hợp lệ.
-  - **Vòng lặp tự sửa lỗi (Retry Loop)**: Tự động trừ điểm QC và chỉ dẫn AI viết lại kịch bản nếu phát hiện từ cấm.
-- **⚡ Kiến Trúc API Bất Đồng Bộ (Asynchronous)**:
-  - Phản hồi `POST /generate` ngay lập tức trong `< 50ms` (`status: processing`), giải phóng kết nối cho n8n không bị timeout.
-  - Tự động gọi ngược **Webhook Callback** về `n8n` khi AI xử lý xong để lưu trữ vào **Notion Database**.
-
----
-
-## 📁 Cấu Trúc Dự Án
-
-```
-tiktok-ai-agent/
-├── agents/                  # Core LangGraph pipeline & state management
-│   ├── __init__.py
-│   └── pipeline.py
-├── api/                     # FastAPI server & background tasks
-│   ├── __init__.py
-│   └── main.py
-├── knowledge_base/          # Tài nguyên tri thức & Bộ lọc kiểm duyệt
-│   ├── tiktok/
-│   │   ├── hooks_library.json
-│   │   ├── cta_templates.json
-│   │   └── prohibited_words.json
-│   ├── brand/
-│   │   └── guidelines.md
-│   ├── loader.py
-│   └── validator.py
-├── prompts/                 # Prompt templates chuẩn cho 4 Agent
-│   ├── research_agent.py
-│   ├── script_agent.py
-│   ├── hashtag_agent.py
-│   └── qc_agent.py
-├── prototypes/              # Các bản prototype thử nghiệm ban đầu
-├── tests/                   # Bộ test tự động (Validator, Pipeline, Webhook)
-│   ├── test_policy_validator.py
-│   ├── test_pipeline_kb_integration.py
-│   └── test_webhook_integration.py
-├── run_server.py            # Script khởi động 1-click FastAPI + Ngrok
-├── requirements.txt         # Danh sách thư viện Python
-├── .env.example             # Mẫu cấu hình môi trường
-└── README.md
+```mermaid
+flowchart LR
+    P[Thông tin và ảnh sản phẩm] --> W[Web duyệt 7 bước]
+    W --> Z[ZIP prompt và ảnh]
+    Z --> B[Bảo tạo clip thử]
+    W --> N[n8n nhận JSON v2]
+    N --> A[Automation API]
+    A --> S[JSON đầy đủ và Notion DRAFT]
 ```
 
----
+Ứng dụng hiện chuẩn bị nội dung và bàn giao. Chưa tích hợp tạo video, ghép MP4, bot Telegram hoặc đăng TikTok.
 
-## 🚀 Cài Đặt & Chạy Hệ Thống
+## Chạy nhanh trên Windows
 
-### 1. Cài đặt thư viện
-```bash
-pip install -r requirements.txt
+Cần Python 3.12 hoặc 3.13, Git và API key Gemini của riêng bạn. Từ thư mục repo:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-test.txt
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+# Điền GEMINI_API_KEY trong .env; giữ các cấu hình khác theo hướng dẫn.
+.\.venv\Scripts\python.exe run_server.py
 ```
 
-### 2. Cấu hình biến môi trường
-Sao chép `.env.example` thành `.env` và điền API Key:
-```bash
-cp .env.example .env
-```
-Cấu hình trong `.env`:
-```env
-GEMINI_API_KEY=AIzaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-WEBHOOK_URL=http://localhost:5678/webhook/ai-agent-callback
-```
+Mở [Content Studio](http://127.0.0.1:8001/app). URL localhost chỉ dùng trên máy đang chạy server.
 
-### 3. Khởi động Server (Local & Public Ngrok)
-```bash
-python run_server.py
-```
-- Local API Docs: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/health`
-- Sinh kịch bản: `POST http://localhost:8000/generate`
+Muốn xem giao diện bằng AI giả lập trước khi có key: chạy `.\.venv\Scripts\python.exe -m tests.preview_studio` và mở cổng **8002**. Đây là chế độ kiểm thử, dữ liệu tách riêng và không phải kết quả AI thật.
 
----
+## Tài liệu và source
 
-## 🧪 Chạy Kiểm Thử (Tests)
+| Nội dung | Đường dẫn |
+|---|---|
+| Bài chính cho nhóm | [Bàn giao Content Studio v2](docs/HANDOFF_CONTENT_STUDIO_V2.md) |
+| API và quy trình web | [Content Studio v2](docs/CONTENT_STUDIO_V2.md) |
+| Source automation đóng gói | [Tích hợp v2 cho Long](integrations/long-v2/README.md) |
+| Mẫu dữ liệu tổng hợp | [Ví dụ gói v2](examples/handoff-v2/README.md) |
+| Kiểm chứng SEJOY và bước tiếp theo | [Runbook nghiệm thu](docs/SEJOY_ACCEPTANCE_RUNBOOK.md) |
+| Bằng chứng kiểm thử | [Trạng thái triển khai](docs/IMPLEMENTATION_STATUS_V2.md) |
+| API tự động cũ | [Pipeline v1](docs/LEGACY_PIPELINE_V1.md) |
+| Mẫu tin nhắn gửi nhóm | [Tin nhắn bàn giao](docs/TEAM_MESSAGE.md) |
 
-```bash
-# Kiểm thử Bộ lọc từ cấm & chống lách luật
-python tests/test_policy_validator.py
+`POST /generate` và callback v1 vẫn hoạt động độc lập. Bộ dữ liệu từng cảnh của web dùng endpoint **v2**.
 
-# Kiểm thử Tích hợp Knowledge Base vào Pipeline
-python tests/test_pipeline_kb_integration.py
-
-# Kiểm thử Webhook Callback
-python -m unittest tests/test_webhook_integration.py
-```
-
----
-
-## 👥 Thành Viên Dự Án
-- **Phan Minh Quân** — AI Agent Lead (LangGraph, Prompt Engineering, Guardrails, FastAPI)
-- **Vũ Thiên Long** — AI Automation Engineer (N8N, Notion, Webhook, Docker)
-- **Nguyễn Thái Bảo** — AI Content & Video (CapCut, Video Generation, Creative Assets)
+Phiên, lịch sử, ảnh tải lên và ZIP thật nằm trong `data/`, được loại khỏi Git. Mỗi máy giữ `.env` riêng; repo chỉ chứa cấu hình mẫu. Tài liệu ghi riêng kiểm thử giả lập, kiểm tra AI thật và nghiệm thu với nhóm.

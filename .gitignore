@@ -1,6 +1,8 @@
 # Không đẩy file chứa mật khẩu lên GitHub
 .env
 .env*.local
+.env.*
+!.env.example
 
 # Thư mục cache Python
 __pycache__/
@@ -22,3 +24,9 @@ env/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local studio state and exports
+data/
+*.sqlite3*
+*.db
+.test-deps/
