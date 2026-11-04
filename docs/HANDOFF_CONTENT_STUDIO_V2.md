@@ -2,6 +2,8 @@
 
 > Ngày cập nhật: 05/11/2026. Mục tiêu của đợt này là giúp nhóm chạy thử cùng một phiên bản source và nghiệm thu bộ prompt. Phần bot Telegram nằm ngoài phạm vi đợt này.
 
+Bản source bàn giao nằm trên nhánh `docs/content-studio-v2-handoff`; xem và góp ý tại [PR #1](https://github.com/QuanPhan78/AI-Tiktok/pull/1). Chưa merge vào `main`.
+
 ## 1. Hệ thống hiện làm được gì?
 
 Người dùng nhập sản phẩm và ảnh, AI đề xuất nội dung, người dùng duyệt từng bước. Sau cùng, chương trình lắp prompt từ dữ liệu đã duyệt và xuất JSON/Markdown/ZIP. AI không được tự viết lại lời thoại đã chốt ở bước xuất.
