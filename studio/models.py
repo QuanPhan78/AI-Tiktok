@@ -70,6 +70,16 @@ class ScenePlan(StrictModel):
     idea_vi: str = Field(min_length=1, max_length=1000)
     direction_en: str = Field(min_length=1, max_length=3000)
     product_visible: bool
+    shot_en: str = Field(default="", max_length=500)
+    start_en: str = Field(default="", max_length=1000)
+    end_en: str = Field(default="", max_length=1000)
+
+    @model_validator(mode="after")
+    def complete_direction(self):
+        fields = (self.shot_en.strip(), self.start_en.strip(), self.end_en.strip())
+        if any(fields) and not all(fields):
+            raise ValueError("Nhập đủ cỡ cảnh, trạng thái đầu và trạng thái cuối.")
+        return self
 
 
 class Plan(StrictModel):
@@ -116,5 +126,5 @@ class Quality(StrictModel):
 class Action(StrictModel):
     revision: int = Field(ge=0)
     operation_id: str = Field(min_length=1, max_length=100)
-    action: Literal["generate", "approve", "revise", "reopen", "handoff"]
+    action: Literal["generate", "approve", "revise", "reopen", "handoff", "submit_video_review", "refresh_video_review"]
     data: dict = Field(default_factory=dict)

@@ -22,4 +22,4 @@ ENABLE_NGROK=0
 
 Contract v1 gồm hook, voice-over, text-on-screen, image prompt, caption, hashtag và QC; không có cấu trúc từng cảnh/ảnh của v2. Model pipeline cũ cấu hình theo source hiện hành; không mặc định rằng đổi model web v2 sẽ thay mọi prototype.
 
-Các prototype so sánh trong `prototypes/` dùng dependency riêng tại `requirements-prototypes.txt`, không cần để chạy web v2. Không truyền bundle `scenes[]` của v2 vào webhook v1. Gói automation v2 được bàn giao riêng, không chứa workflow n8n v1; Long giữ workflow v1 từ repo của mình.
+Các prototype so sánh trong `prototypes/` dùng dependency riêng tại `requirements-prototypes.txt`, không cần để chạy web v2. Không truyền bundle `scenes[]` của v2 vào webhook v1. Workflow n8n v1 đi kèm trong thư mục `integrations/long-v2/n8n/` với tên `Step4` đến `Step9`. Dùng cấu hình bot và database của luồng v1 khi vận hành các workflow này.

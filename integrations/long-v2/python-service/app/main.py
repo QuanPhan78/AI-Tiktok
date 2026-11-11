@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from app import notion_client, token_storage, handoff_v2
+from app import notion_client, token_storage, handoff_v2, video_review_v2
 from app.logger import get_logger
 from app.notifier import send_telegram_alert
 from app.tiktok_client import (
@@ -36,6 +36,7 @@ app = FastAPI(
 
 # Đăng ký router Content Studio v2
 app.include_router(handoff_v2.router)
+app.include_router(video_review_v2.router)
 
 # ===== Models =====
 class HealthResponse(BaseModel):

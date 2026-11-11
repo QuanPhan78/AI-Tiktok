@@ -133,3 +133,30 @@ class Store:
     def save_asset(self, meta):
         with self.db() as db:
             db.execute("INSERT INTO assets VALUES(?,?)", (meta["id"], self.dump(meta)))
+
+    def attach_video(self, sid, expected_revision, meta):
+        with self.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT body FROM sessions WHERE id=?", (sid,)).fetchone()
+            if not row:
+                raise KeyError(sid)
+            s = json.loads(row[0])
+            if (s["revision"] != expected_revision or s["status"] == "processing" or
+                    s["step"] != 7 or not s.get("bundle")):
+                raise Conflict("Cần mở đúng phiên đã chốt Bước 7. Hãy tải lại trang trước khi gắn video.")
+            current = s.get("video") or {}
+            bundle_revision = s["bundle"]["revision"]
+            if (current.get("bundle_revision") == bundle_revision and current.get("sha256") == meta["sha256"]
+                    and self.video_path(current).is_file()):
+                return s, False
+            stamp = now()
+            db.execute("INSERT INTO history(session_id,operation,created,body) VALUES(?,?,?,?)",
+                       (sid, self.dump({"action": "attach_video"}), stamp, row[0]))
+            s.update(video={**meta, "version": current.get("version", 0) + 1,
+                            "bundle_revision": bundle_revision, "status": "ATTACHED"},
+                     revision=s["revision"] + 1, updated_at=stamp, status="ready", error=None)
+            db.execute("UPDATE sessions SET body=?,updated=? WHERE id=?", (self.dump(s), stamp, sid))
+        return s, True
+
+    def video_path(self, video):
+        return self.path.parent / "videos" / (video["id"] + ".mp4")

@@ -1,57 +1,39 @@
-# Nghiệm thu SEJOY: bộ prompt → clip thử → dữ liệu nhận
+# Nghiệm thu Content Studio v2 với SEJOY
 
-Hiện đã có bundle **revision 26**, bốn cảnh, Gemini thật QC **9/10**. Phiên tăng lên revision 27 sau lần gửi lỗi kết nối, chưa có biên nhận. Không tạo lại hoặc tự sửa nội dung đã duyệt chỉ để vượt kiểm tra. Gói thật nằm trên máy tạo phiên, gửi riêng cho nhóm.
+Ngày 11/11/2026, phiên SEJOY đã đi qua các mốc dưới đây trên môi trường thử. Repo chứa source và hướng dẫn tái hiện. Gói prompt, MP4 và biên nhận thật lưu riêng với dữ liệu dự án.
 
-## Chuẩn bị
+| Mốc | Kết quả đã ghi nhận |
+|---|---|
+| Nội dung đã chốt | Prompt revision 26, bốn cảnh, QC Gemini 9/10, ZIP đủ hai ảnh tham chiếu. |
+| Bàn giao Notion | Database thử có một bản `DRAFT`. Prompt đầy đủ và JSON đọc lại khớp biên nhận, kể cả sau khi restart. |
+| Video | Gemini trả bản nối bốn cảnh dọc 720 × 1280, dài 40,04 giây. MP4 v1 phát được tại Bước 7. |
+| Duyệt video | Bot v2 gửi đúng MP4 v1. Người duyệt bấm nút trong Telegram, Notion và Content Studio cùng hiện `APPROVED`. |
+| Đăng TikTok | Đã bàn giao file, caption và hashtag để chủ tài khoản chọn cách đăng. Chưa có link bài đăng trong nghiệm thu này. |
 
-- Bảo kiểm tra ảnh nguồn đúng biến thể hoặc thay ảnh phù hợp. Ảnh hiện có chữ quảng cáo/chứng nhận chưa được xác minh; chưa chốt size, màu và áp lực.
-- Giá đầu vào **518.600₫** là giá sau voucher trong nội dung người dùng gửi; cần kiểm tra lại khi đăng.
-- Giữ câu cuối cố định. Chưa xác nhận giỏ TikTok Shop tương ứng thì chỉ dùng nội bộ; link Shopee không chứng minh đã có giỏ TikTok.
-- Có database Notion thử riêng, đúng schema và được integration truy cập. Không ghi nghiệm thu vào database đang dùng.
+## Chạy lại với một phiên thử
 
-## 1. Bên web — kiểm tra và lấy gói
+1. Tạo phiên với ảnh và thông tin sản phẩm đã xác nhận. Duyệt đủ bảy bước theo [hướng dẫn sử dụng](HANDOFF_CONTENT_STUDIO_V2.md).
+2. Gửi bundle vào database Notion thử. Kiểm tra bản `DRAFT`, gửi lại cùng bundle và đối chiếu biên nhận. Giữ volume khi restart.
+3. Tạo MP4, gắn tại Bước 7 rồi gửi vào nhóm Telegram thử. Kiểm tra `PENDING_REVIEW`. Bấm **Duyệt video** hoặc **Cần sửa**, sau đó bấm **Đọc trạng thái duyệt** ở web.
+4. Để thử nút cũ, dùng một phiên thử riêng. Gắn và gửi MP4 v2 có nội dung khác MP4 v1. Bấm nút ở tin nhắn v1 để xác nhận bị từ chối. Tiếp tục bấm nút của v2 và đối chiếu đúng quyết định trong Notion và web.
 
-Từ gốc repo, dùng `.env` riêng:
+## Đối chiếu bản bàn giao
 
-```powershell
-.\.venv\Scripts\python.exe scripts/acceptance.py preflight --side quan
-.\.venv\Scripts\python.exe run_server.py
-```
-
-Mở cổng 8001, chọn phiên SEJOY trên máy tạo phiên và tải ZIP tại Bước 7. Repo clone mới không có phiên đó; nhận ZIP từ nhóm, hoặc tạo một phiên khác và duyệt đủ bảy bước khi cần chạy lại.
-
-Giữ nguyên `handoff.json`, `prompts.md` và hai ảnh. Không sửa prompt ngoài phiên. Nếu sửa đầu vào/hành động/lời thoại, quay lại bước tương ứng và duyệt lại các bước phụ thuộc để có bundle revision mới.
-
-## 2. Bảo — tạo thử Cảnh 2
-
-Dùng nguyên prompt Cảnh 2 trong `prompts.md`, đính kèm ảnh sản phẩm và ảnh nhân vật của chính ZIP, tạo clip 8 giây bằng công cụ đang dùng. Gửi clip gốc và ghi:
-
-- request_id, bundle revision, mã cảnh, công cụ/model tạo video;
-- hình dáng/màu sản phẩm và nhân vật có đúng không;
-- lời thoại có đúng/đủ, nhịp nói, lỗi hình ảnh, watermark nếu có.
-
-Cần sửa hành động/phong cách thì quay Bước 4; sửa lời thoại quay Bước 5. Một cảnh đạt chưa có nghĩa câu chốt Cảnh 4 đã đọc vừa thời lượng.
-
-## 3. Long — nhận vào database thử
-
-Làm theo [README gói automation](../integrations/long-v2/README.md): cấu hình `.env`, chạy preflight đọc schema, khởi động Docker với override nghiệm thu, import workflow v2 và bật Header Auth `X-Content-Token`.
-
-Web và Docker cùng máy dùng `http://127.0.0.1:5678/webhook/ai-agent-callback-v2`. Hai máy khác nhau cần URL HTTPS production v2; localhost không dùng làm link chia sẻ. Không cần dựng URL HTTPS để thử trên cùng máy.
-
-Gửi đúng bundle từ nút **Gửi sang Long** sau khi cấu hình xong. Kiểm tra phản hồi thành công, Notion trạng thái DRAFT và đầy đủ cảnh/prompt trong thân trang. Không xem HTTP lỗi hoặc thao tác đang xử lý là đã bàn giao.
-
-## 4. Đối chiếu và lưu bằng chứng
-
-Lưu nguyên biên nhận n8n vào `receipt.json`; nếu lấy `session.handoff` từ API web thì bọc thành `{"success":true,"data":...}`. Long đọc `GET /api/v2/content/{request_id}/revisions/{revision}` bằng revision trong bundle, lưu `readback.json`. Từ gốc repo:
+Lấy `handoff.json` từ ZIP. Lưu phản hồi n8n nguyên vẹn thành `receipt.json`. Nếu đọc từ API phiên, bọc `session.handoff` thành `{"success":true,"data":...}`. Lưu kết quả `GET /api/v2/content/{request_id}/revisions/{revision}` thành `readback.json`, với revision trong bundle.
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/acceptance.py compare --bundle handoff.json --receipt receipt.json --readback readback.json --database-id ID_DATABASE_THU --zip goi-da-duyet.zip
 ```
 
-Lệnh kiểm tra schema, request/revision, toàn bộ payload, SHA-256, database đích, prompt Markdown và ảnh trong ZIP. Restart service, giữ volume, đọc lại và so lần nữa. Gửi lại cùng bundle phải trả duplicate mà không tạo trang/section trùng.
+Lệnh kiểm tra mã yêu cầu, revision, database đích, JSON đầy đủ, SHA-256, prompt Markdown và hai ảnh. So lại sau khi restart Automation.
 
-Chỉ thử bảo vệ trạng thái đã duyệt/lập lịch bằng một bản ghi tổng hợp riêng, không dùng bản SEJOY chính. Database thử không nối vào workflow đăng bài.
+## Kiểm thử không dùng dữ liệu thật
 
-## Điều kiện hoàn tất
+Từ gốc repo:
 
-Có đủ ZIP đã duyệt, clip thử dùng được do Bảo xác nhận, biên nhận và readback khớp trước/sau restart do Long xác nhận. `technical_checks_passed=true` chưa thay thế xác nhận thủ công. Thiếu mục nào thì ghi chờ mục đó; chưa có bài đăng TikTok hoặc tích hợp Telegram trong đợt này.
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-test.txt
+.\.venv\Scripts\python.exe -m unittest tests.test_qc_results tests.test_studio_v2 tests.test_gateway_v2 tests.test_handoff_v2 tests.test_acceptance_tools tests.test_policy_validator tests.test_pipeline_kb_integration tests.test_webhook_integration tests.test_video_review_v2 -q
+```
+
+Bộ test dùng dữ liệu giả lập cho bước AI, nhận bundle, Notion, Telegram và các tình huống gửi trùng hoặc bấm nút duyệt bản cũ. Test live nằm riêng trong `tests/test_live_e2e_pipeline.py`.

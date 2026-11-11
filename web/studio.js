@@ -3,7 +3,7 @@ const $ = s => document.querySelector(s);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const names = ['Sản phẩm','Tình huống','Nhân vật','Kế hoạch cảnh','Lời thoại','Tổng hợp','Xuất prompt'];
 const stateNames = {awaiting_input:'Chờ tạo bản nháp',awaiting_approval:'Chờ bạn duyệt',processing:'Đang xử lý',ready:'Đã chốt bộ prompt',needs_changes:'Cần chỉnh sửa',error:'Chưa hoàn tất'};
-let session = null, library = [], poll = null, busy = false, renderedStep = '';
+let session = null, library = [], poll = null, busy = false, renderedStep = '', outcomeSection = '';
 async function api(path, options={}) {
   const r = await fetch('/api/v2'+path, options);
   const d = await r.json();
@@ -13,7 +13,8 @@ async function api(path, options={}) {
 function notice(message='') { $('#notice').hidden=!message; $('#notice').textContent=message; }
 function toast(t) { $('#toast').textContent=t; $('#toast').hidden=false; setTimeout(()=>$('#toast').hidden=true,2400); }
 function revealOutcome() {
-  const target = !$('#notice').hidden ? $('#notice') : session?.step===6 ? $('#qc-result') : session?.step===7 ? $('#exports') : $('#editor');
+  const contextual = outcomeSection ? $(outcomeSection) : null;
+  const target = !$('#notice').hidden ? $('#notice') : contextual || (session?.step===6 ? $('#qc-result') : session?.step===7 ? $('#exports') : $('#editor'));
   if (!target) return;
   target.setAttribute('tabindex','-1');
   target.focus({preventScroll:true});
@@ -48,6 +49,44 @@ function qcReport(s) {
 function text(id,label,value='',extra='') { return `<label for="${id}">${label}</label><input id="${id}" value="${esc(value)}" ${extra}>`; }
 function area(id,label,value='',cls='') { return `<label for="${id}">${label}</label><textarea id="${id}" class="${cls}">${esc(value)}</textarea>`; }
 const val = id => document.getElementById(id)?.value ?? '';
+const videoStates = {ATTACHED:'Đã gắn MP4',PENDING_REVIEW:'Đang chờ duyệt video',APPROVED:'Video đã được duyệt',NEEDS_REVISION:'Video cần sửa'};
+function videoPanel(s) {
+  const revision=s.bundle.revision;
+  const v=s.video?.bundle_revision===revision?s.video:null;
+  const handedOff=s.handoff?.revision===revision&&s.handoff.status==='received';
+  return `<section class="scene" id="video-review"><h3>Video của bản prompt r${revision}</h3>
+    ${s.error&&outcomeSection==='#video-review'?`<p class="error" role="alert">${esc(s.error)}</p>`:''}
+    <label for="video-file">${v?'Thay video MP4':'Chọn video MP4'}</label><input id="video-file" type="file" accept="video/mp4,.mp4">
+    <p class="helper">Tối đa 45 MB. Khi gửi bản thay thế, nút duyệt của video trước sẽ hết hiệu lực.</p>
+    <button id="attach-video">${v?'Lưu MP4 thay thế':'Gắn MP4'}</button>
+    ${v?`<video controls playsinline preload="metadata" src="/api/v2/sessions/${s.id}/videos/${v.version}" aria-label="Xem trước video"></video>
+    <p>${esc(v.filename)} · MP4 v${v.version} · ${esc(videoStates[v.status])}</p>
+    <button class="primary" id="submit-video-review" ${!handedOff||v.status!=='ATTACHED'?'disabled':''}>Gửi duyệt video</button>
+    ${v.status!=='ATTACHED'?'<button id="refresh-video-review">Đọc trạng thái duyệt</button>':''}
+    ${!handedOff?'<p class="helper">Gửi bộ prompt sang Long trước khi gửi MP4 vào hàng duyệt.</p>':''}`:''}</section>`;
+}
+function showDialogueCount(field) {
+  const words=field.value.trim().split(/\s+/).filter(Boolean).length;
+  const message=$('#dialogue-count');
+  if(!message)return;
+  const outside=words<18||words>24;
+  message.textContent=`${words} từ · Mục tiêu 18–24 từ. ${outside?'Hãy kiểm tra lại nhịp đọc trên clip thật.':'Kiểm tra nhịp đọc khi có clip.'}`;
+  message.classList.toggle('message',outside);
+}
+async function attachVideo() {
+  const file=$('#video-file').files[0];
+  if(!file)throw new Error('Hãy chọn tệp MP4 để xem trước.');
+  if(busy||session.status==='processing')return;
+  busy=true;
+  const sid=session.id, button=$('#attach-video');
+  button.disabled=true;
+  notice();
+  const form=new FormData();form.append('revision',session.revision);form.append('file',file);
+  try {
+    const result=await api(`/sessions/${sid}/videos`,{method:'POST',body:form});
+    if(session?.id===sid){session=result;render();$('#video-review').scrollIntoView({block:'start'});}
+  } finally {busy=false;button.disabled=false;}
+}
 async function upload(input) {
   const file = input.files[0]; if (!file) return null;
   const form = new FormData(); form.append('file',file);
@@ -66,7 +105,7 @@ async function refreshList() {
   $('#sessions').innerHTML=list.length?list.map(s=>`<button data-session="${s.id}" class="${session?.id===s.id?'active':''}">${esc(s.product.name)}<small>Bước ${s.step}/7 · ${esc(stateNames[s.status]||s.status)}</small></button>`).join(''):'<p class="helper" style="padding:12px">Chưa có phiên nào.<br>Tạo nội dung đầu tiên của bạn.</p>';
 }
 async function openSession(id) {
-  clearTimeout(poll); notice();
+  clearTimeout(poll); notice(); outcomeSection='';
   session=await api('/sessions/'+encodeURIComponent(id));
   localStorage.setItem('studio-session',id); render(); await refreshList(); schedulePoll();
 }
@@ -80,6 +119,7 @@ function schedulePoll() {
 async function action(kind,data={}) {
   if(busy||!session||session.status==='processing')return;
   busy=true; notice();
+  outcomeSection=kind.endsWith('_video_review')?'#video-review':'';
   const sid=session.id;
   const submittedPublishing=kind==='approve'&&session.step===6?data.publishing:null;
   try {
@@ -108,7 +148,7 @@ function render() {
   const s=session,d=s.draft,a=s.approved,step=s.step;
   let html=`<span class="status">${esc(stateNames[s.status]||s.status)}</span><h2>${step}. ${names[step-1]}</h2>`;
   if(step!==6){
-    if(s.error)html+=`<div class="error">${esc(s.error)}</div>`;
+    if(s.error&&!(step===7&&outcomeSection==='#video-review'))html+=`<div class="error">${esc(s.error)}</div>`;
     if(s.validation?.length)html+=`<div class="message">${s.validation.map(esc).join('<br>')}<br>Hãy quay lại bước tương ứng để sửa, hoặc chỉnh nội dung tổng hợp rồi kiểm tra lại.</div>`;
     if(step<7)for(const w of s.warnings||[])html+=`<div class="message">${esc(w)}</div>`;
   }
@@ -122,11 +162,11 @@ function render() {
     html+=`<p>${esc(d.reason)}</p><div class="characters">${library.map(c=>`<label class="character"><input type="radio" name="character" value="${c.id}" ${c.id===d.character.id?'checked':''}><img src="${c.image_url}" alt="${esc(c.name)}"><span>${esc(c.id)} · ${esc(c.name)}<br>${c.age} tuổi<small>${esc(c.voice)}<br>${esc(c.setting)}</small></span></label>`).join('')}</div><label for="audio-mode">Giọng nói trong video</label><select id="audio-mode"><option value="speaking" ${d.audio_mode!=='voiceover'?'selected':''}>Nhân vật nói trực tiếp</option><option value="voiceover" ${d.audio_mode==='voiceover'?'selected':''}>Không thoại trong clip, thuyết minh riêng khi dựng</option></select><p class="helper">Nhân vật dự phòng: ${esc(d.backup_id||'Bạn tự chọn')}. Bạn có thể chọn nhân vật khác bên trên.</p><details><summary>Tạo nhân vật mới (NV9 trở lên)</summary><label class="check"><input type="checkbox" id="custom-character" ${custom.asset_id?'checked':''}>Dùng nhân vật mới thay cho thư viện</label><div class="grid2">${text('char-id','Mã nhân vật',custom.id||'NV9')}${text('char-name','Tên nhân vật',custom.name)}</div><div class="grid2">${text('char-age','Tuổi',custom.age||'25','type="number" min="18" max="100"')}<div><label for="char-gender">Giới tính / đại từ</label><select id="char-gender"><option value="female">Nữ</option><option value="male" ${custom.gender==='male'?'selected':''}>Nam</option></select></div></div>${text('char-voice','Giọng nói',custom.voice)}${text('char-setting','Bối cảnh',custom.setting)}${text('char-outfit','Trang phục',custom.outfit)}${text('char-suitable','Loại sản phẩm phù hợp',custom.suitable_for)}${area('char-block','Khối nhân vật tiếng Anh, có chỗ điền [PRODUCT]',custom.consistency_block)}<label for="char-image">Ảnh nhân vật mới</label><input id="char-image" type="file" accept="image/png,image/jpeg,image/webp"></details>`;
   } else if(step===4){
     html+=`<label for="scene-count">Số cảnh cần tạo</label><select id="scene-count"><option value="4" ${d?.scenes.length===4?'selected':''}>4 cảnh · khoảng 32 giây trước khi cắt</option><option value="5" ${d?.scenes.length===5?'selected':''}>5 cảnh · tách công dụng thành 3A và 3B</option></select>`;
-    if(d)html+=area('style-vi','Phong cách chung',d.style_vi)+text('lighting-en','Ánh sáng cố định (tiếng Anh)',d.lighting_en)+d.scenes.map((x,i)=>`<div class="scene"><div class="scene-heading"><h3>Cảnh ${x.id} · ${esc(x.part)}</h3><span>8 giây</span></div>${area('action-'+i,'Hành động',x.action_vi)}${area('idea-'+i,'Ý chính',x.idea_vi)}<details><summary>Mô tả dùng để lắp prompt</summary>${area('direction-'+i,'Mô tả cảnh bằng tiếng Anh',x.direction_en)}<label class="check"><input type="checkbox" id="visible-${i}" ${x.product_visible?'checked':''}>Sản phẩm xuất hiện trong cảnh</label></details></div>`).join('');
+    if(d)html+=area('style-vi','Phong cách chung',d.style_vi)+text('lighting-en','Ánh sáng cố định (tiếng Anh)',d.lighting_en)+d.scenes.map((x,i)=>`<div class="scene"><div class="scene-heading"><h3>Cảnh ${x.id} · ${esc(x.part)}</h3><span>8 giây</span></div>${area('action-'+i,'Hành động',x.action_vi)}${area('idea-'+i,'Ý chính',x.idea_vi)}${area('shot-'+i,'Cỡ cảnh và chuyển động máy (tiếng Anh)',x.shot_en)}${area('start-'+i,'Trạng thái đầu cảnh (tiếng Anh)',x.start_en)}${area('end-'+i,'Trạng thái cuối cảnh (tiếng Anh)',x.end_en)}<details><summary>Mô tả dùng để lắp prompt</summary>${area('direction-'+i,'Mô tả cảnh bằng tiếng Anh',x.direction_en)}<label class="check"><input type="checkbox" id="visible-${i}" ${x.product_visible?'checked':''}>Sản phẩm xuất hiện trong cảnh</label></details></div>`).join('');
   } else if(step===5){
     const scene=a['4'].scenes[s.scene_cursor];
     html+=`<p class="helper">Đã duyệt ${Object.keys(s.dialogues).length} cảnh. Các lời thoại đã chốt được giữ nguyên.</p><h3>Cảnh ${scene.id} · ${esc(scene.part)}</h3><p>${esc(scene.action_vi)}</p>`;
-    if(d)html+=area('dialogue','Lời thoại đang chờ duyệt',d.text)+'<p class="helper">Bạn có thể sửa trực tiếp rồi chốt cảnh này. Khoảng 20–26 từ là gợi ý; cần kiểm tra nhịp đọc trên clip thật.</p>';
+    if(d)html+=area('dialogue','Lời thoại đang chờ duyệt',d.text)+'<p class="helper" id="dialogue-count" aria-live="polite"></p>';
   } else if(step===6&&d){
     html+='<h3>Bảng 1 · Lời thoại đã chốt</h3><table><thead><tr><th>Cảnh</th><th>Phần</th><th>Lời thoại</th></tr></thead><tbody>'+a['4'].scenes.map(x=>`<tr id="dialogue-row-${x.id}"><td>${x.id}</td><td>${esc(x.part)}</td><td>${esc(s.dialogues[x.id])}${x.id!=='4'?`<br><button class="quiet" data-dialogue="${x.id}">Sửa lời thoại cảnh này</button>`:''}</td></tr>`).join('')+'</tbody></table>';
     html+=`<h3>Bảng 2 · Nội dung để dựng và đăng bài</h3><table><tbody><tr><th>Slogan</th><td>${area('slogans','5 slogan, mỗi dòng một câu',d.slogans.join('\n'))}</td></tr><tr><th>Caption</th><td>${d.captions.map((c,i)=>area('caption-'+i,'Caption '+(i+1),c)).join('')}<label for="selected-caption">Caption dùng để bàn giao</label><select id="selected-caption">${d.captions.map((_,i)=>`<option value="${i}" ${i===d.selected_caption?'selected':''}>Caption ${i+1}</option>`).join('')}</select></td></tr><tr><th>Hashtag</th><td>${area('hashtags','8–10 hashtag',d.hashtags.join(' '))}</td></tr><tr><th>Bình luận ghim</th><td>${area('pinned','Giữ nguyên link sản phẩm',d.pinned_comment)}</td></tr><tr><th>Chữ thêm khi dựng</th><td>${text('overlay2','Cảnh 2 · tên và công dụng ngắn',d.overlay_scene2)}${text('overlay4','Cảnh cuối · giá',d.overlay_scene4,'readonly')}</td></tr></tbody></table><p class="helper">Chốt sẽ kiểm tra toàn bộ nội dung trước khi xuất prompt. QC không tự thay đổi lời thoại bạn đã duyệt.</p>`;
@@ -136,13 +176,14 @@ function render() {
     for(const w of b.qc.warnings)html+=`<p class="helper">${esc(w)}</p>`;
     html+=b.scenes.map(x=>`<div class="scene"><div class="scene-heading"><h3>Cảnh ${x.id} · ${esc(x.part)}</h3><button class="quiet" data-copy="prompt-${x.id}">Sao chép</button></div><textarea readonly class="prompt" id="prompt-${x.id}">${esc(x.prompt_en)}</textarea>${b.character.audio_mode==='voiceover'?`<p>Lời thuyết minh riêng: ${esc(x.dialogue_vi)}</p>`:''}<p class="helper">${x.overlay_text?'Chữ khi dựng: '+esc(x.overlay_text):'Không chèn chữ trong clip sinh bởi AI.'}</p></div>`).join('');
     html+=`<details open><summary>Nội dung đăng bài</summary>${area('export-caption','Caption đã chọn',b.publishing.captions[b.publishing.selected_caption])}<button class="quiet" data-copy="export-caption">Sao chép caption</button>${area('export-tags','Hashtag',b.publishing.hashtags.join(' '))}<button class="quiet" data-copy="export-tags">Sao chép hashtag</button>${area('export-pinned','Bình luận ghim',b.publishing.pinned_comment)}<button class="quiet" data-copy="export-pinned">Sao chép bình luận</button><p>${b.publishing.slogans.map(esc).join(' · ')}</p></details>`;
-    if(s.handoff)html+=`<div class="message">Long đã xác nhận nhận bản ${s.handoff.revision}. Trạng thái nội dung là DRAFT, chưa phải video được duyệt đăng.</div>`;
+    if(s.handoff)html+=`<div class="message">Long đã nhận bộ prompt r${s.handoff.revision}.</div>`;
   }
   if(step===6)html+=qcReport(s);
   if(step<7){html+=`<div class="question">${['Thông tin sản phẩm này đã đúng chưa?','Bạn chọn tình huống nào?','Bạn có đồng ý nhân vật và giọng nói này không?','Bạn có đồng ý kế hoạch các cảnh này không?','Bạn đã chốt lời thoại cảnh này chưa?','Bạn có chốt phương án cuối cùng này không?'][step-1]}</div><div class="actions"><button id="generate">${d?'Tạo lại bản nháp':'Tạo bản nháp'}</button>${d?`<button id="approve" class="primary">${step===6?'Chốt và xuất prompt →':step===5?'Chốt cảnh này →':'Đồng ý và tiếp tục →'}</button>`:''}</div>`;}
-  else html+='<div class="actions"><button id="handoff" class="primary">Gửi sang Long →</button><span class="helper">Chỉ gửi bộ nội dung đã chốt.</span></div>';
+  else html+='<div class="actions"><button id="handoff" class="primary">Gửi sang Long →</button><span class="helper">Chỉ gửi bộ nội dung đã chốt.</span></div>'+videoPanel(s);
   if(s.status==='processing')html+='<p class="busy"><span class="spinner"></span> Đang xử lý nội dung. Bạn có thể đóng trang và quay lại.</p>';
   editor.innerHTML=html;
+  if($('#dialogue-count'))showDialogueCount($('#dialogue'));
   if(step===7)editor.querySelectorAll('textarea').forEach(e=>e.readOnly=true);
   if(s.status==='processing')editor.querySelectorAll('button,input,textarea,select').forEach(e=>e.disabled=true);
 }
@@ -151,11 +192,12 @@ async function approve() {
   if(step===1){if(!$('#confirm-facts').checked)throw new Error('Hãy xác nhận bạn đã kiểm tra thông tin.');data={summary:val('summary'),suggestions:val('suggestions').split('\n').filter(Boolean),product_description_en:val('description-en')};}
   if(step===2)data={index:Number($('input[name=situation]:checked')?.value),custom:val('custom-situation').trim()};
   if(step===3){data={character_id:$('input[name=character]:checked')?.value,audio_mode:val('audio-mode')};if($('#custom-character').checked){const asset_id=await upload($('#char-image'))||d.character.asset_id;if(!asset_id)throw new Error('Cần ảnh nhân vật mới.');data.new_character={id:val('char-id'),name:val('char-name'),age:Number(val('char-age')),gender:val('char-gender'),voice:val('char-voice'),setting:val('char-setting'),outfit:val('char-outfit'),suitable_for:val('char-suitable'),consistency_block:val('char-block'),image_filename:'',asset_id};}}
-  if(step===4)data={plan:{style_vi:val('style-vi'),lighting_en:val('lighting-en'),scenes:d.scenes.map((x,i)=>({...x,action_vi:val('action-'+i),idea_vi:val('idea-'+i),direction_en:val('direction-'+i),product_visible:$('#visible-'+i).checked}))}};
+  if(step===4)data={plan:{style_vi:val('style-vi'),lighting_en:val('lighting-en'),scenes:d.scenes.map((x,i)=>({...x,action_vi:val('action-'+i),idea_vi:val('idea-'+i),direction_en:val('direction-'+i),shot_en:val('shot-'+i),start_en:val('start-'+i),end_en:val('end-'+i),product_visible:$('#visible-'+i).checked}))}};
   if(step===5)data={text:val('dialogue')};
   if(step===6)data={publishing:{...d,slogans:val('slogans').split('\n').filter(Boolean),captions:[0,1,2].map(i=>val('caption-'+i)),selected_caption:Number(val('selected-caption')),hashtags:val('hashtags').split(/\s+/).filter(Boolean),pinned_comment:val('pinned'),overlay_scene2:val('overlay2'),overlay_scene4:val('overlay4')}};
   await action('approve',data);
 }
+document.addEventListener('input',e=>{if(e.target.id==='dialogue')showDialogueCount(e.target);});
 document.addEventListener('click',async e=>{
   try{
     const b=e.target.closest('button');if(!b)return;
@@ -168,6 +210,9 @@ document.addEventListener('click',async e=>{
     if(b.id==='generate')await action('generate',session.step===4?{scene_count:Number(val('scene-count'))}:{});
     if(b.id==='approve')await approve();
     if(b.id==='handoff')await action('handoff');
+    if(b.id==='attach-video')await attachVideo();
+    if(b.id==='submit-video-review')await action('submit_video_review',{version:session.video.version});
+    if(b.id==='refresh-video-review')await action('refresh_video_review',{version:session.video.version});
     if(b.id==='save-product'){const image=await upload($('#product-image'));await action('revise',{product:{name:val('product-name'),uses:val('product-uses'),price:val('product-price'),product_link:val('product-link'),asset_id:image||session.product.asset_id}});}
     if(b.id==='history'){const events=await api(`/sessions/${session.id}/history`);$('#history-body').innerHTML=events.length?events.map(x=>`<div class="history-row"><b>${esc(x.operation.action)} · Bước ${x.snapshot.step}</b><br>${esc(new Date(x.created).toLocaleString('vi-VN'))} · phiên bản ${x.snapshot.revision}<details><summary>Xem nội dung đã lưu</summary><pre style="white-space:pre-wrap">${esc(JSON.stringify(x.snapshot,null,2))}</pre></details></div>`).join(''):'Chưa có thao tác nào.';$('#history-dialog').showModal();}
     if(b.id==='close-history')$('#history-dialog').close();

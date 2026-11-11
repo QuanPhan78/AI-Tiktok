@@ -32,11 +32,23 @@ def compile_prompt(character, scene, analysis, plan, dialogue, audio_mode):
     else:
         who = "He" if character["gender"] == "male" else "She"
         sound = who + " says the line in Vietnamese, once, clearly, at a calm pace, and starts speaking after half a second."
-    parts = [block, REFERENCE, "Lighting: " + plan["lighting_en"],
-             "(a) " + scene["direction_en"] + " " + sound]
+    direction = scene["direction_en"]
+    tail = TAIL
+    if scene.get("shot_en", "").strip():
+        direction = (f"Cinematography: {scene['shot_en']}\nStart: {scene['start_en']}\n"
+                     f"Action: {direction}\nEnd: {scene['end_en']}\n"
+                     "Natural blinking and relaxed gestures.")
+        if audio_mode == "speaking":
+            timing = "Start speaking around 0.3 seconds and finish before the last 0.7 seconds."
+            if scene["id"] == "4":
+                timing = "Start speaking around 0.2 seconds with a natural, slightly brisk pace."
+            sound = f"{who} says the line once in Vietnamese, warmly and naturally. {timing}"
+        sound += "\nAmbient noise: soft quiet room tone."
+        tail = TAIL.replace("Stable pose for the first and last half second.", "Use the same lighting, color tone and camera style across scenes.")
+    parts = [block, REFERENCE, "Lighting: " + plan["lighting_en"], "(a) " + direction + " " + sound]
     if audio_mode == "speaking":
         parts.append('(b) "' + dialogue + '"')
-    parts.append(TAIL)
+    parts.append(tail)
     return "\n".join(parts)
 
 
@@ -58,8 +70,15 @@ def build_bundle(s, store, revision):
     scenes = []
     for i, scene in enumerate(plan["scenes"], 1):
         line = s["dialogues"][scene["id"]]
-        if len(line.split()) > 26 or len(line.split()) < 20 or re.search(r"\d", line):
-            warnings.append(f"Cảnh {scene['id']}: {len(line.split())} từ, cần kiểm tra nhịp đọc.")
+        words = len(line.split())
+        planned = bool(scene.get("shot_en", "").strip())
+        if planned:
+            needs_timing_check = scene["id"] != "4" and not 18 <= words <= 24
+        else:
+            # Reconstruct the exact warnings in previously exported bundles.
+            needs_timing_check = not 20 <= words <= 26 or bool(re.search(r"\d", line))
+        if needs_timing_check:
+            warnings.append(f"Cảnh {scene['id']}: {words} từ, cần kiểm tra nhịp đọc.")
         scenes.append({"id": scene["id"], "order": i, "duration_seconds": 8,
                        "part": scene["part"], "action_vi": scene["action_vi"], "dialogue_vi": line,
                        "prompt_en": compile_prompt(char, scene, approved["1"], plan, line, s["audio_mode"]),

@@ -6,7 +6,7 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from pathlib import Path
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
 from PIL import Image
 from studio.ai import characters
@@ -14,6 +14,7 @@ from studio.models import Action, Product, STEP_NAMES
 from studio.output import CHAR_DIR, character_asset, markdown, build_bundle
 from studio.service import Studio
 from studio.store import Store, Conflict
+from studio.video import save_mp4
 
 router = APIRouter(prefix="/api/v2", tags=["Content Studio"])
 workers = ThreadPoolExecutor(max_workers=2, thread_name_prefix="studio")
@@ -145,6 +146,44 @@ def session_action(sid: str, action: Action):
         except Exception:
             get_store().finish(sid, req["operation_id"], error="Không khởi tạo được tác vụ. Hãy thử lại.")
     return public_session(lookup(sid))
+
+
+@router.post("/sessions/{sid}/videos", status_code=201)
+def upload_video(sid: str, revision: int = Form(...), file: UploadFile = File(...)):
+    lookup(sid)
+    store = get_store()
+    meta = {"id": uuid.uuid4().hex,
+            "filename": Path((file.filename or "video.mp4").replace("\\", "/")).name[:150]}
+    path = store.video_path(meta)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    kept = False
+    try:
+        meta.update(save_mp4(file.file, path))
+        session, kept = store.attach_video(sid, revision, meta)
+        return public_session(session)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except OverflowError as exc:
+        raise HTTPException(413, str(exc)) from exc
+    except Conflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    finally:
+        if not kept:
+            path.unlink(missing_ok=True)
+
+
+@router.get("/sessions/{sid}/videos/{version}")
+def preview_video(sid: str, version: int):
+    s = lookup(sid)
+    video = s.get("video") or {}
+    bundle = s.get("bundle") or {}
+    if (s["step"] != 7 or video.get("version") != version or
+            video.get("bundle_revision") != bundle.get("revision")):
+        raise HTTPException(404, "Không có video của phiên bản hiện tại.")
+    path = get_store().video_path(video)
+    if not path.is_file():
+        raise HTTPException(404, "Không tìm thấy tệp MP4.")
+    return FileResponse(path, media_type="video/mp4", headers={"Cache-Control": "private, no-store"})
 
 
 @router.get("/sessions/{sid}/export/{fmt}")

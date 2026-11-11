@@ -1,154 +1,91 @@
-# Bàn giao Content Studio v2 — hướng dẫn cho Bảo và Long
+# Hướng dẫn Content Studio v2
 
-> Ngày cập nhật: 05/11/2026. Mục tiêu của đợt này là giúp nhóm chạy thử cùng một phiên bản source và nghiệm thu bộ prompt. Phần bot Telegram nằm ngoài phạm vi đợt này.
+Quy trình đã chạy thử với SEJOY gồm duyệt prompt, tạo MP4 trong Gemini, bàn giao nội dung vào Notion và duyệt đúng MP4 qua Telegram. Người quản lý tài khoản thực hiện bước đăng hoặc lên lịch trên TikTok.
 
-Bản source bàn giao nằm trên nhánh `docs/content-studio-v2-handoff`; xem và góp ý tại [PR #1](https://github.com/QuanPhan78/AI-Tiktok/pull/1). Chưa merge vào `main`.
+## 1. Cài và mở Content Studio
 
-## 1. Hệ thống hiện làm được gì?
-
-Người dùng nhập sản phẩm và ảnh, AI đề xuất nội dung, người dùng duyệt từng bước. Sau cùng, chương trình lắp prompt từ dữ liệu đã duyệt và xuất JSON/Markdown/ZIP. AI không được tự viết lại lời thoại đã chốt ở bước xuất.
-
-```mermaid
-flowchart TD
-    P[Thông tin và ảnh sản phẩm] --> W[Content Studio - cổng 8001]
-    W --> S[SQLite lưu phiên và lịch sử]
-    W --> Q[Duyệt đủ 7 bước và kiểm tra QC]
-    Q --> Z[ZIP gồm prompt và hai ảnh tham chiếu]
-    Z --> B[Bảo tạo thử một cảnh 8 giây]
-    Q --> J[JSON v2 đã duyệt]
-    J --> N[n8n - cổng 5678]
-    N --> A[Automation API - cổng 8000]
-    A --> D[JSON và biên nhận trên Docker volume]
-    A --> T[Notion - trạng thái DRAFT]
-    T --> R[Biên nhận có mã yêu cầu, phiên bản, SHA-256]
-    R --> W
-```
-
-Web chưa gọi API tạo video, chưa dựng MP4 và chưa đăng TikTok. Chốt prompt không phải quyết định duyệt một video để đăng. QC là kiểm tra nội bộ, không phải chứng nhận tuân thủ của TikTok.
-
-| Mốc | Bằng chứng hiện có |
-|---|---|
-| Backend, giao diện và automation v2 | Source nằm trong repo này, gồm gói tích hợp riêng cho Long |
-| Kiểm thử | 119 bài tự động đã đạt trước đợt đóng gói; phần xác minh bản bàn giao nằm trong [trạng thái triển khai](IMPLEMENTATION_STATUS_V2.md) |
-| SEJOY thật | Bộ xuất revision 26, bốn cảnh, Gemini QC 9/10; đã tải ZIP đủ prompt và hai ảnh, đối chiếu nội dung giữ nguyên |
-| Bàn giao SEJOY | Phiên revision 27 ghi nhận lần gửi lỗi kết nối, chưa có biên nhận; bundle vẫn là revision 26 |
-| Video và đăng bài | Chưa có clip thử được nhóm xác nhận, chưa đăng TikTok |
-
-Revision của phiên tăng theo thao tác; revision của bundle là bản nội dung đã chốt. Khi đối chiếu bàn giao phải dùng revision trong `handoff.json` và biên nhận, không lấy số phiên sau một lần gửi lỗi.
-
-## 2. Cài và mở web
-
-Khuyến nghị Python **3.12 hoặc 3.13**. Python 3.14 trên máy phát triển chạy được bộ test nhưng LangChain còn cảnh báo tương thích Pydantic V1. Cần Git; Docker Desktop chỉ cần khi thử phần automation. Các lệnh dưới dùng PowerShell trên Windows.
+Cần Git và Python 3.12 hoặc 3.13. Cài Docker Desktop nếu chạy cả Notion và Telegram. Các lệnh dưới dùng PowerShell trên Windows.
 
 ```powershell
 git clone https://github.com/QuanPhan78/AI-Tiktok.git
 cd AI-Tiktok
-# Trong lúc PR chưa merge, lấy đúng nhánh bàn giao:
-git switch docs/content-studio-v2-handoff
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-test.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 if (!(Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-Điền key của chính máy đang chạy vào `.env`. Chỉ cần Gemini cho web; credential Notion đặt trong thư mục automation. Cấu hình web dùng:
-
-```dotenv
-GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-3.1-flash-lite
-GEMINI_FALLBACK_MODEL=gemini-3.5-flash-lite
-HOST=127.0.0.1
-PORT=8001
-ENABLE_NGROK=0
-WEBHOOK_V2_URL=http://127.0.0.1:5678/webhook/ai-agent-callback-v2
-WEBHOOK_V2_TOKEN=your_shared_random_token
-```
-
-Đây là tên model đã dùng thành công trong lần kiểm tra; quyền truy cập và hạn mức tùy tài khoản API. Nếu model không khả dụng, chọn model tài khoản có quyền qua biến môi trường. Không sao chép key vào bài, source hoặc nhóm chat.
+Điền `GEMINI_API_KEY` trong `.env` ở gốc repo. Chọn `GEMINI_MODEL` và `GEMINI_FALLBACK_MODEL` mà tài khoản API của bạn có quyền dùng. Có thể cấu hình automation sau khi đã thử giao diện.
 
 ```powershell
 .\.venv\Scripts\python.exe run_server.py
 ```
 
-Mở [web cổng 8001](http://127.0.0.1:8001/app). Phiên được lưu dưới `data/`, mở lại trình duyệt hoặc server vẫn tiếp tục được. Repo clone mới không chứa phiên SEJOY của máy phát triển.
+Mở [Content Studio](http://127.0.0.1:8001/app). Phiên, ảnh và lịch sử lưu trong `data/` trên máy chạy, nên có thể tiếp tục sau khi khởi động lại. Repo clone mới bắt đầu với dữ liệu trống.
 
-Muốn xem luồng bằng dữ liệu giả lập, chạy lệnh dưới trong một cửa sổ riêng rồi mở [web QA cổng 8002](http://127.0.0.1:8002/app):
+Để thử quy trình bằng AI giả lập, chạy `.\.venv\Scripts\python.exe -m tests.preview_studio` trong cửa sổ riêng rồi mở [giao diện kiểm thử](http://127.0.0.1:8002/app). Có thể dùng [sản phẩm tổng hợp](../examples/handoff-v2/README.md).
 
-```powershell
-.\.venv\Scripts\python.exe -m tests.preview_studio
+![Giao diện Content Studio với dữ liệu tổng hợp](images/content-studio-v2-demo.jpg)
+
+## 2. Duyệt nội dung qua 7 bước
+
+| Bước | Việc cần làm |
+|---|---|
+| 1. Sản phẩm | Nhập tên, công dụng đã xác nhận, giá, link và ảnh. Kiểm tra tóm tắt trước khi duyệt. |
+| 2. Tình huống | Chọn một đề xuất hoặc nhập tình huống riêng. |
+| 3. Nhân vật | Chọn nhân vật có ảnh tham chiếu hoặc thêm nhân vật mới. Chọn nói trực tiếp hoặc thuyết minh. |
+| 4. Kế hoạch cảnh | Dùng 4 cảnh hoặc tách cảnh 3 thành 3A và 3B. Duyệt hành động, cỡ cảnh và tư thế đầu, cuối để giữ mạch hình. |
+| 5. Lời thoại | Duyệt từng cảnh. Với các cảnh trước câu chốt, dùng 18–24 từ làm mục tiêu rồi kiểm tra nhịp nói khi có video. Cảnh cuối dùng câu chốt cố định. |
+| 6. Tổng hợp | Kiểm tra bảng kịch bản, chữ khi dựng, slogan, caption, hashtag và bình luận ghim. Chọn caption rồi bấm **Chốt và xuất prompt**. |
+| 7. Xuất prompt | Sao chép prompt từng cảnh hoặc tải JSON, Markdown, ZIP. Mở **Nội dung đăng bài** để sao chép caption, hashtag và bình luận ghim. |
+
+Bước 6 cho xuất khi điểm QC từ 8/10, không còn lỗi chặn và đủ dữ liệu. Web chỉ ra cảnh hoặc trường cần sửa ngay gần nút chốt. Cảnh báo nhịp đọc cần đối chiếu bằng clip thật. Nếu sửa một bước đã chốt, các bước phụ thuộc cần được duyệt lại. Lịch sử phiên giữ các bản trước.
+
+ZIP gồm `handoff.json`, `prompts.md`, `product.*` và `character.*`. Mã yêu cầu và revision trong `handoff.json` dùng để đối chiếu bản nội dung, kể cả khi số revision của phiên tăng sau khi gửi hoặc duyệt.
+
+## 3. Tạo và kiểm tra MP4
+
+1. Mở `prompts.md` và lấy prompt đúng revision. Dùng ảnh sản phẩm và nhân vật của cùng ZIP làm tham chiếu.
+2. Trong công cụ tạo video, chọn khung dọc 9:16. Với phép thử Gemini, bật chế độ Video trước, giữ cùng cuộc chat khi yêu cầu các cảnh nối tiếp. Tải bản gốc sau từng lượt.
+3. Kiểm tra file trả về sau mỗi lượt. Nếu công cụ đã nối cảnh mới vào các cảnh trước, dùng bản nối cuối. Nếu công cụ trả clip riêng, ghép theo thứ tự rồi xuất một MP4.
+4. Phát hết clip để đối chiếu nhân vật, sản phẩm, thứ tự cảnh và lời thoại. Giữ bản gốc và đo thời lượng thực. Dự kiến trong prompt là 8 giây mỗi cảnh. Bản SEJOY từ Gemini dài 40,04 giây cho bốn cảnh.
+
+## 4. Bàn giao nội dung vào Notion
+
+Làm theo [hướng dẫn cấu hình automation](../integrations/long-v2/README.md) để chạy Docker, cấp quyền Notion cho integration và import workflow n8n. Khi web và Docker cùng máy, đặt trong `.env` ở gốc repo:
+
+```dotenv
+WEBHOOK_V2_URL=http://127.0.0.1:5678/webhook/ai-agent-callback-v2
+VIDEO_REVIEW_API_URL=http://127.0.0.1:8000
+WEBHOOK_V2_TOKEN=your_shared_random_token
 ```
 
-Chế độ này không gọi Gemini/đọc link sản phẩm để sinh nội dung. Dùng sản phẩm tổng hợp trong [mẫu v2](../examples/handoff-v2/README.md); không coi kết quả QA là nghiệm thu AI thật và không bấm gửi vào Notion đang dùng. Cổng 8001 vẫn là luồng thật.
+Đặt cùng giá trị `WEBHOOK_V2_TOKEN` cho Automation và credential Header Auth ở n8n. Khởi động lại web sau khi sửa `.env`. Cổng 5678 nhận dữ liệu prompt, cổng 8000 xử lý yêu cầu duyệt MP4, còn cổng 8001 là giao diện.
 
-![Giao diện với dữ liệu tổng hợp](images/content-studio-v2-demo.jpg)
+Tại Bước 7 bấm **Gửi sang Long**. Đợi web xác nhận đã nhận đúng revision và kiểm tra bản `DRAFT` trong database thử. Notion lưu phần tóm tắt và prompt đầy đủ. Biên nhận đối chiếu mã yêu cầu, revision và SHA-256 của JSON. [Cách đối chiếu và kiểm thử](SEJOY_ACCEPTANCE_RUNBOOK.md).
 
-## 3. Duyệt đủ 7 bước
+## 5. Duyệt video qua Telegram
 
-| Bước | Người dùng làm gì? | Điều kiện tiếp tục |
-|---|---|---|
-| 1. Sản phẩm | Nhập tên, công dụng đã xác nhận, giá, link và ảnh; kiểm tra tóm tắt | Xác nhận thông tin, không biến gợi ý chưa kiểm chứng thành sự thật |
-| 2. Tình huống | Chọn một trong bốn đề xuất hoặc tự nhập | Chốt một tình huống |
-| 3. Nhân vật | Chọn NV1–NV8 hoặc nhân vật mới có ảnh; chọn nói trực tiếp/thuyết minh | Chốt nhân vật và giọng |
-| 4. Kế hoạch cảnh | Chọn bốn cảnh hoặc tách cảnh 3 thành 3A/3B để có năm cảnh | Duyệt hành động và phong cách |
-| 5. Lời thoại | Duyệt lần lượt từng cảnh | Giữ nguyên câu chốt cuối cố định |
-| 6. Tổng hợp | Kiểm tra hai bảng, 5 slogan, 3 caption, hashtag, bình luận ghim và chữ dựng | Chọn caption; QC từ 8/10, không còn lỗi chặn, đủ dữ liệu |
-| 7. Xuất prompt | Sao chép từng prompt hoặc tải JSON/Markdown/ZIP | Chỉ mở khi Bước 6 đạt |
+1. Cấu hình bot thử, nhóm, người duyệt và webhook HTTPS. [Hướng dẫn Telegram](../integrations/long-v2/README.md#6-duyệt-mp4-trên-telegram).
+2. Ở Bước 7, trong mục **Video của bản prompt**, chọn MP4 tối đa 45 MB, bấm **Gắn MP4** và phát thử trong web.
+3. Khi web đã có biên nhận bàn giao prompt, bấm **Gửi duyệt video**. Telegram nhận MP4 và hiện bản prompt cùng phiên bản video. Notion chuyển sang `PENDING_REVIEW`.
+4. Người được cấp quyền mở đúng tin nhắn và chọn **Duyệt video** hoặc **Cần sửa**. Trở lại Content Studio, bấm **Đọc trạng thái duyệt** để lấy quyết định. Notion và web phải cùng hiện `APPROVED` hoặc `NEEDS_REVISION`.
+5. Khi có MP4 sửa lại, chọn **Thay video MP4**, bấm **Lưu MP4 thay thế** và gửi duyệt lại. Sau khi bản thay thế được gửi, nút trên tin nhắn cũ hết hiệu lực. Quyết định gắn với đúng revision prompt, phiên bản MP4 và SHA-256 của file.
 
-Bốn cảnh dự kiến tổng 32 giây, năm cảnh dự kiến 40 giây trước khi dựng/cắt. Thời lượng thực phải đo trên clip; độ dài lời thoại và câu chốt được cảnh báo, không cam kết đọc vừa 8 giây.
+## 6. Bàn giao để đăng TikTok
 
-Giá dùng khi dựng và link dùng khi đăng được giữ nguyên, không đưa vào lời thoại/prompt video. Sửa bước trước hủy xác nhận các bước phụ thuộc và giữ lịch sử. QC hiện gần nút chốt, nêu trường/cảnh cùng trích đoạn nếu chặn; lời nhắc phong cách/độ dài không tự chặn. Lỗi AI hoặc kết nối giữ bản sửa đã gửi, không âm thầm sửa lời thoại.
+- Lấy đúng file MP4 đã được duyệt. Tại Bước 7, mở **Nội dung đăng bài** rồi bấm **Sao chép caption** và **Sao chép hashtag**.
+- Chủ tài khoản tải video lên TikTok, dán nội dung đã chọn và gắn đúng sản phẩm nếu clip kêu gọi bấm giỏ hàng. Với hình hoặc giọng nói AI chân thực, bật nhãn nội dung do AI tạo. [Hướng dẫn TikTok](https://support.tiktok.com/en/using-tiktok/creating-videos/ai-generated-content?authuser=0).
+- Đăng ngay hoặc chọn lịch theo giờ Việt Nam trên TikTok. Sau khi bài lên, ghi link vào trang Notion để đối chiếu.
 
-## 4. Bảo nhận gì và thử thế nào?
+## 7. Xử lý lỗi thường gặp
 
-Nhận **ZIP xuất từ Bước 7**, gồm `handoff.json`, `prompts.md`, `product.*`, `character.*`. ZIP SEJOY thật gửi riêng trong nhóm; mẫu trong GitHub là dữ liệu tổng hợp, không phải ảnh/sản phẩm SEJOY đã xác nhận.
-
-1. Kiểm tra ảnh sản phẩm đúng biến thể và ảnh nhân vật. Ảnh SEJOY nguồn còn có chữ quảng cáo/chứng nhận chưa xác minh; cần xác nhận hoặc thay ảnh phù hợp trước khi dùng.
-2. Mở `prompts.md`, lấy **nguyên prompt Cảnh 2**, đính kèm cả hai ảnh và tạo một clip 8 giây trong công cụ đang dùng. Nếu chọn chế độ thuyết minh thì lời thoại đi riêng khi dựng.
-3. Trả lại clip gốc cùng nhận xét về sản phẩm, nhân vật, lời thoại, nhịp đọc, lỗi hình ảnh và watermark nếu có. Ghi rõ request_id, bundle revision và mã cảnh.
-4. Cần sửa thì báo đúng cảnh: hành động/phong cách sửa ở Bước 4, lời thoại sửa ở Bước 5; duyệt lại các phần phụ thuộc rồi xuất bản mới. Không chỉnh prompt ngoài bản được quản lý.
-
-Một cảnh thử đạt chưa chứng minh toàn video hoặc câu chốt cuối đã vừa thời lượng. Biến thể, giá khi đăng và giỏ TikTok Shop còn phải kiểm tra thực tế.
-
-## 5. Long nhận gì và chạy thế nào?
-
-Source nằm trong [gói automation v2](../integrations/long-v2/README.md). Có thể chạy ngay trên cùng máy web để kiểm tra trước; Docker Compose phục vụ n8n cổng **5678**, API cổng **8000**. Header Auth phải khớp `WEBHOOK_V2_TOKEN` của web.
-
-| Trường hợp | Cấu hình đích trên web |
+| Hiện tượng | Cách kiểm tra |
 |---|---|
-| Web và Docker cùng máy | `http://127.0.0.1:5678/webhook/ai-agent-callback-v2` |
-| Web và automation khác máy | URL HTTPS production của webhook v2 do máy automation cung cấp; giữ Header Auth |
-
-`127.0.0.1` luôn chỉ chính máy đang gọi. Không gửi địa chỉ này cho máy khác rồi coi như liên kết nhóm. Khi khác máy chỉ cần mở webhook có xác thực, không mở toàn bộ giao diện web/n8n ra Internet.
-
-Các bước chi tiết, schema Notion thử và lệnh chạy có trong README gói tích hợp. Luồng nhận là:
-
-1. Web kiểm tra bản chốt, gửi nguyên JSON v2 qua n8n, không gọi AI viết lại.
-2. n8n chuyển toàn bộ payload tới `POST /api/v2/content/ai-output`.
-3. API lưu JSON và tiến độ trên Docker volume, ghi Notion ở trạng thái **DRAFT**. Prompt dài nằm trong thân trang và được chia block.
-4. Web chỉ báo nhận thành công khi biên nhận khớp `request_id`, `revision`, `payload_sha256`.
-5. Long đọc lại `GET /api/v2/content/{request_id}/revisions/{revision}` và đối chiếu toàn bộ dữ liệu, kể cả sau restart.
-
-Ảnh không được upload qua callback JSON; metadata chứa tên, dung lượng và SHA-256. Bảo nhận ảnh trong ZIP. Gửi lại cùng bản không tạo trang/section trùng. Nội dung đã sang duyệt video/lập lịch/đăng không được ghi đè bằng bản mới.
-
-**V1 khác v2:** webhook v1 `/webhook/ai-agent-callback` nhận `ai_result` của pipeline cũ. Web 7 bước gửi `scenes[]`, nhân vật và publishing qua webhook **`ai-agent-callback-v2`**; không đổi URL sang v1 để thử vượt lỗi.
-
-## 6. Lỗi thường gặp
-
-| Hiện tượng | Kiểm tra và xử lý |
-|---|---|
-| Gemini 503/504 | Lỗi dịch vụ tạm thời; server có retry/fallback giới hạn. Thử lại sau; đổi key không bảo đảm hết quá tải |
-| Gemini 401/403/429 | Kiểm tra key, quyền model, hạn mức và cấu hình tài khoản; không lặp vô hạn |
-| QC chưa cho xuất | Đọc bảng ngay trên nút chốt; sửa đúng trường/cảnh có bằng chứng. Không ép điểm hoặc sửa câu chốt cố định vì phong cách |
-| Thiếu ảnh hoặc ảnh thay đổi | Kiểm tra ảnh sản phẩm ở Bước 1, nhân vật ở Bước 3 rồi duyệt lại |
-| Docker không kết nối | Mở Docker Desktop, đợi engine sẵn sàng; kiểm tra `docker info` |
-| Webhook ConnectError/404 | Kiểm tra Docker, workflow đã bật, URL production `/webhook/…` và đúng cổng; `/webhook-test/…` không dùng để bàn giao thường xuyên |
-| Webhook 401/403 | Credential Header Auth phải có header `X-Content-Token`, khớp cấu hình phía web |
-| Notion 503/502 | Kiểm tra database thử, quyền integration, đúng schema; 502 có thể đã lưu một phần, gửi lại nguyên bundle để tiếp tục |
-| Gửi không thành công | Bundle đã chốt vẫn còn để tải/gửi lại; chỉ ghi nhận thành công khi có biên nhận hợp lệ |
-
-## 7. Kiểm thử và nghiệm thu
-
-Từ gốc repo, dùng lệnh trong [trạng thái triển khai](IMPLEMENTATION_STATUS_V2.md) để chạy suite tự động không gọi AI/Notion thật. Kiểm thử gồm 4/5 cảnh, bảo toàn lời thoại, QC cảnh báo/lỗi, API v1, gửi trùng, prompt dài và lưu lại sau lỗi. Không dùng `test_live_e2e_pipeline.py` để thay cho suite giả lập.
-
-Nghiệm thu cùng nhóm còn cần: Bảo xác nhận clip thử; Long có biên nhận và readback khớp bản xuất, dữ liệu tồn tại sau restart. Xem [runbook SEJOY](SEJOY_ACCEPTANCE_RUNBOOK.md). Câu chốt đang nhắc TikTok Shop nên chỉ dùng nội bộ cho đến khi nhóm xác nhận sản phẩm có trong giỏ tương ứng.
-
-Trước khi báo đạt, ghi đủ ba kết quả: **bộ prompt dùng được**, **clip thử dùng được**, **bản nhận khớp bản duyệt**. Source và bài hướng dẫn không thay thế các bằng chứng này.
+| Gemini báo 401, 403 hoặc 429 | Kiểm tra key, quyền model và hạn mức tài khoản. |
+| Gemini báo 503 hoặc 504 | Đợi dịch vụ ổn định rồi thử lại. Bản đã duyệt vẫn lưu trong phiên. |
+| Chưa xuất được prompt | Xem trường hoặc cảnh QC chỉ ra. Kiểm tra ảnh sản phẩm ở Bước 1 và ảnh nhân vật ở Bước 3. |
+| Gửi sang Long lỗi 404 hoặc lỗi kết nối | Kiểm tra Docker, URL production `/webhook/ai-agent-callback-v2` và workflow đã bật. |
+| Gửi sang Long lỗi 401 hoặc 403 | Đối chiếu `X-Content-Token` và `WEBHOOK_V2_TOKEN` ở cả ba nơi. |
+| Notion lỗi 502 hoặc 503 | Kiểm tra quyền integration và database thử. Nếu service đã ghi một phần, gửi lại nguyên bundle để tiếp tục. |
+| Telegram chưa có video | Kiểm tra biên nhận prompt, MP4 hợp lệ, bot trong nhóm và biến cấu hình Automation. |
+| Bấm nút Telegram mà trạng thái chưa đổi | Kiểm tra webhook HTTPS còn chạy và tài khoản có quyền. Bấm **Đọc trạng thái duyệt** ở Content Studio. |

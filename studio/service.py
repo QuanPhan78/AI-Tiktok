@@ -13,6 +13,7 @@ from studio.models import (Analysis, Situations, Recommendation, Plan, Dialogue,
                            Publishing, Quality, Product, Character, CTA)
 from studio.output import build_bundle, character_asset
 from studio.quality import review_fields, classify_quality
+from studio.video import review_request
 
 
 def validate_copy(value):
@@ -59,6 +60,8 @@ class Studio:
             value = self.generate("plan", s, Plan, required_scene_ids=ids)
             if [x["id"] for x in value["scenes"]] != ids:
                 raise ValueError("AI trả số cảnh khác số đã chọn. Hãy thử lại.")
+            if any(not scene["shot_en"].strip() for scene in value["scenes"]):
+                raise ValueError("AI chưa trả đủ cỡ cảnh, trạng thái đầu và cuối cho từng cảnh. Hãy thử lại.")
         elif step == 5:
             scene = s["approved"]["4"]["scenes"][s["scene_cursor"]]
             value = self.generate("dialogue", s, Dialogue, current_scene=scene)
@@ -77,8 +80,12 @@ class Studio:
         s["warnings"] = []
         if step == 6:
             s.pop("quality", None)
-        if step == 5 and (len(value["text"].split()) > 26 or re.search(r"\d", value["text"])):
-            s["warnings"] = ["Lời thoại dài hoặc chứa số; kiểm tra nhịp đọc khi tạo clip."]
+        if step == 5:
+            words = len(value["text"].split())
+            if not 18 <= words <= 24:
+                s["warnings"] = [f"Bản nháp có {words} từ, ngoài khoảng gợi ý 18–24. Hãy kiểm tra nhịp đọc khi có clip."]
+            if re.search(r"\d", value["text"]):
+                s["warnings"].append("Lời thoại chứa chữ số. Hãy kiểm tra cách đọc khi có clip.")
 
     def approve(self, s, data):
         step = s["step"]
@@ -269,6 +276,24 @@ class Studio:
         allowed = ("request_id", "revision", "notion_page_id", "notion_database_id", "payload_sha256", "duplicate")
         s["handoff"] = {"status": "received", **{k: data[k] for k in allowed if k in data}}
 
+    def video_review(self, s, data, method):
+        bundle = s.get("bundle") or {}
+        handoff = s.get("handoff") or {}
+        video = s.get("video") or {}
+        if s["step"] != 7 or not video or bundle.get("revision") != video["bundle_revision"]:
+            raise ValueError("Cần gắn MP4 cho đúng bản prompt đã chốt.")
+        if data.get("version") != video["version"]:
+            raise ValueError("Phiên bản MP4 đã thay đổi. Hãy tải lại và xem trước video.")
+        if handoff.get("status") != "received" or handoff.get("revision") != video["bundle_revision"]:
+            raise ValueError("Cần bàn giao bản prompt hiện tại sang Automation trước khi gửi video.")
+        if method == "GET" and video["status"] == "ATTACHED":
+            raise ValueError("Hãy bấm Gửi duyệt video trước khi đọc trạng thái.")
+        path = self.store.video_path(video)
+        if method == "POST" and not path.is_file():
+            raise ValueError("Tệp MP4 bị thiếu. Hãy tải lại tệp.")
+        receipt = review_request(s, {**video, "path": path}, method)
+        video.update(status=receipt["status"], review_id=receipt.get("review_id"))
+
     def execute(self, sid, request, before):
         try:
             s = copy.deepcopy(before)
@@ -284,6 +309,10 @@ class Studio:
                 self.reopen(s, request["data"])
             elif action == "handoff":
                 self.handoff(s)
+            elif action == "submit_video_review":
+                self.video_review(s, request["data"], "POST")
+            elif action == "refresh_video_review":
+                self.video_review(s, request["data"], "GET")
             if s.get("status") != "needs_changes":
                 s["status"] = "ready" if s["step"] == 7 else "awaiting_approval" if s["draft"] else "awaiting_input"
             s.pop("error", None)

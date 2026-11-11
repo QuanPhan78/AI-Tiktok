@@ -32,6 +32,9 @@ class FakeGateway:
                                 "action_vi": "Nhân vật sắp xếp bút trên bàn." if sid != "4" else "Nhân vật mỉm cười nhẹ.",
                                 "idea_vi": "Giữ góc bàn ngăn nắp.",
                                 "direction_en": "The character stands at the desk, gently arranges pens, filmed with a stable medium smartphone shot in natural realism. Quiet room sounds. Stable pose for the first and last half second.",
+                                "shot_en": "Steady medium shot",
+                                "start_en": "The character stands next to the desk.",
+                                "end_en": "The character keeps a hand on the desk.",
                                 "product_visible": sid != "1"} for sid in context["required_scene_ids"]]}
         if kind == "dialogue":
             return {"text": "Mình muốn góc bàn gọn hơn nên thử sắp xếp lại bút, nhờ vậy việc tìm đồ cũng thuận tiện hơn mỗi ngày."}

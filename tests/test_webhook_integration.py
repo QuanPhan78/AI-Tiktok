@@ -3,7 +3,7 @@ TESTS/TEST_WEBHOOK_INTEGRATION.PY
 ==================================
 Automated test suite verifying:
 1. R1: Asynchronous execution of POST /generate (< 5s response)
-2. R2: Webhook integration on port 5678 at /webhook/ai-agent-callback
+2. R2: Webhook delivery at /webhook/ai-agent-callback
 3. Strict adherence to Step 4 API contract schema
 4. Success, QC failure, and exception handling paths
 5. Default webhook URL resolution (no URL in payload)
@@ -13,7 +13,6 @@ Automated test suite verifying:
 
 import json
 import time
-import socket
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from unittest import TestCase, main
@@ -57,19 +56,13 @@ class MockWebhookHandler(BaseHTTPRequestHandler):
 class TestWebhookIntegration(TestCase):
     mock_server = None
     mock_server_thread = None
-    mock_port = 5678
 
     @classmethod
     def setUpClass(cls):
         MockWebhookHandler.received_requests = []
-        try:
-            cls.mock_server = HTTPServer(("0.0.0.0", cls.mock_port), MockWebhookHandler)
-        except OSError:
-            try:
-                cls.mock_server = HTTPServer(("127.0.0.1", cls.mock_port), MockWebhookHandler)
-            except OSError:
-                cls.mock_server = HTTPServer(("127.0.0.1", 0), MockWebhookHandler)
-                cls.mock_port = cls.mock_server.server_port
+        # n8n may be running on its production port during local acceptance.
+        cls.mock_server = HTTPServer(("127.0.0.1", 0), MockWebhookHandler)
+        cls.mock_port = cls.mock_server.server_port
 
         cls.mock_server_thread = threading.Thread(target=cls.mock_server.serve_forever, daemon=True)
         cls.mock_server_thread.start()
@@ -87,6 +80,12 @@ class TestWebhookIntegration(TestCase):
         _request_log.clear()
         _active_threads.clear()
         self.client = TestClient(app)
+
+    def tearDown(self):
+        # Let callbacks finish before the next test resets the shared mock server.
+        for worker in _active_threads.copy().values():
+            worker.join(timeout=10)
+            self.assertFalse(worker.is_alive(), "A background webhook outlived its test.")
 
     def test_post_generate_returns_immediately_under_5s(self):
         """Acceptance Criteria 1: POST /generate returns immediately (< 5s)."""
@@ -146,8 +145,8 @@ class TestWebhookIntegration(TestCase):
             if "test_async_01" in _active_threads:
                 _active_threads["test_async_01"].join(timeout=5.0)
 
-    def test_mock_server_port_5678_receives_webhook_callback(self):
-        """Acceptance Criteria 2: Mock server on port 5678 receives POST request at /webhook/ai-agent-callback."""
+    def test_mock_server_receives_webhook_callback(self):
+        """Acceptance Criteria 2: Configured server receives POST at /webhook/ai-agent-callback."""
         mock_pipeline_result = {
             "request_id": "req_step4_verify",
             "status": "success",
@@ -278,10 +277,8 @@ class TestWebhookIntegration(TestCase):
         self.assertIsInstance(body["metadata"]["model_used"], str)
         self.assertIsInstance(body["metadata"]["created_at"], str)
 
-    def test_default_webhook_url_port_5678(self):
+    def test_uses_configured_default_webhook_url(self):
         """When webhook_url is not provided in payload, default URL is used."""
-        if self.mock_port != 5678:
-            self.skipTest("Port 5678 was not available for mock server")
 
         mock_pipeline_result = {
             "request_id": "req_default_url_01",
@@ -312,7 +309,8 @@ class TestWebhookIntegration(TestCase):
             "product": {"name": "Default Test", "price": "100000"},
         }
 
-        with patch("api.main.run_pipeline", return_value=mock_pipeline_result):
+        default_url = f"http://127.0.0.1:{self.mock_port}/webhook/ai-agent-callback"
+        with patch("api.main.DEFAULT_WEBHOOK_URL", default_url), patch("api.main.run_pipeline", return_value=mock_pipeline_result):
             self.client.post("/generate", json=payload)
             if "req_default_url_01" in _active_threads:
                 _active_threads["req_default_url_01"].join(timeout=5.0)

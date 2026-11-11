@@ -1,0 +1,48 @@
+{
+  "name": "Content Studio - Telegram Video Review v2",
+  "nodes": [
+    {
+      "parameters": {"httpMethod": "POST", "path": "telegram-video-callback-v2", "responseMode": "responseNode", "options": {}},
+      "id": "video-review-hook",
+      "name": "Telegram video callback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "webhookId": "content-studio-telegram-review-v2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-service:8000/api/v2/content/telegram-video-callback",
+        "sendHeaders": true,
+        "headerParameters": {"parameters": [{"name": "X-Telegram-Bot-Api-Secret-Token", "value": "={{ $json.headers['x-telegram-bot-api-secret-token'] ?? '' }}"}]},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {"response": {"response": {"neverError": true, "fullResponse": true}}}
+      },
+      "id": "video-review-decision",
+      "name": "Verify and record decision",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [230, 0]
+    },
+    {
+      "parameters": {"respondWith": "noData", "options": {"responseCode": "={{ $json.statusCode }}"}},
+      "id": "video-review-result",
+      "name": "Acknowledge callback",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [470, 0]
+    }
+  ],
+  "connections": {
+    "Telegram video callback": {"main": [[{"node": "Verify and record decision", "type": "main", "index": 0}]]},
+    "Verify and record decision": {"main": [[{"node": "Acknowledge callback", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1", "saveDataSuccessExecution": "none", "saveDataErrorExecution": "none",
+    "saveManualExecutions": false, "saveExecutionProgress": false
+  }
+}

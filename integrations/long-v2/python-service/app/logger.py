@@ -60,6 +60,8 @@ def setup_logging() -> None:
 
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
+    # Telegram Bot API includes the bot token in the request URL.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
     # 1. Console Handler (INFO level)
     console_handler = logging.StreamHandler(sys.stdout)
@@ -88,4 +90,3 @@ def get_logger(name: str) -> logging.Logger:
     if not _configured:
         setup_logging()
     return logging.getLogger(name)
-

@@ -3,6 +3,7 @@ uvicorn[standard]
 requests
 pydantic
 httpx
+python-multipart
 python-dotenv
 notion-client==2.2.1
 cryptography

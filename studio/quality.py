@@ -18,8 +18,9 @@ def review_fields(session, publishing):
     fields["plan.style_vi"] = plan["style_vi"]
     fields["plan.lighting_en"] = plan["lighting_en"]
     for scene in plan["scenes"]:
-        for key in ("action_vi", "idea_vi", "direction_en"):
-            fields[f"scenes.{scene['id']}.{key}"] = scene[key]
+        for key in ("action_vi", "idea_vi", "direction_en", "shot_en", "start_en", "end_en"):
+            if scene.get(key):
+                fields[f"scenes.{scene['id']}.{key}"] = scene[key]
     return fields
 
 
