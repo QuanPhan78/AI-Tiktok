@@ -19,7 +19,7 @@ API v1 `/generate`, `/status/{request_id}` và callback cũ giữ nguyên địn
 | `GET /api/v2/sessions/{id}` | Toàn bộ trạng thái hiện tại |
 | `GET /api/v2/sessions/{id}/history` | Lịch sử và bản chụp trước mỗi thao tác |
 | `POST /api/v2/sessions/{id}/actions` | Sinh, duyệt, sửa, quay lại hoặc bàn giao |
-| `GET /api/v2/sessions/{id}/export/{format}` | `json`, `markdown` hoặc `zip` sau Bước 6 |
+| `GET /api/v2/sessions/{id}/export/{format}` | `json`, `markdown`, `notebook` hoặc `zip` sau Bước 6. `?revision=` đối chiếu revision bundle, trả 409 nếu đã thay đổi. |
 | `POST /api/v2/sessions/{id}/videos` | Gắn MP4 vào bản prompt đã chốt. Multipart gồm `revision` của phiên và `file`. |
 | `GET /api/v2/sessions/{id}/videos/{version}` | Phát MP4 đang gắn với bản prompt hiện tại. |
 
@@ -31,7 +31,7 @@ Các action:
 - `approve`: duyệt bước hiện tại. Bước 2 nhận `index` từ 0–3 hoặc `custom`; Bước 3 nhận `character_id`, `audio_mode` hoặc `new_character`; Bước 4 nhận `plan`; Bước 5 nhận `text`; Bước 6 nhận `publishing`.
 - `revise`: sửa `product` ở Bước 1 hoặc sửa `draft` ở bước hiện tại, chưa chuyển bước.
 - `reopen`: nhận `step` trước đó; ở Bước 5 có thể thêm `scene_id` để sửa một lời thoại. Các lời thoại sau được giữ thành bản nháp để duyệt lại.
-- `handoff`: gửi đúng bộ nội dung đã chốt tới webhook v2. Chỉ báo nhận thành công nếu mã, phiên bản và SHA-256 trong biên nhận của Long khớp.
+- `handoff`: gửi đúng bộ nội dung đã chốt tới webhook v2. Chỉ báo nhận thành công nếu mã, phiên bản và SHA-256 trong biên nhận lưu vào Notion khớp.
 - `submit_video_review`, `refresh_video_review`: gửi MP4 đang gắn vào hàng duyệt hoặc đọc quyết định Telegram. Cả hai nhận `data.version` của MP4. Tải MP4 riêng giữ trạng thái `ATTACHED` trên web. Khi Automation xác nhận nhận đúng tệp, web hiển thị `PENDING_REVIEW` hoặc quyết định đã có.
 
 Phiên có `step`, `revision`, `status`, `draft`, `approved`, `scene_cursor`, `dialogues`, `validation`, `validation_details`, `warnings`. Kết quả `quality` gồm điểm, phản hồi, lỗi có bằng chứng và lời nhắc riêng. Trạng thái gồm `awaiting_input`, `awaiting_approval`, `processing`, `needs_changes`, `ready`, `error`. Lỗi bàn giao không xóa bộ prompt.

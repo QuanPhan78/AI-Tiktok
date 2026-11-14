@@ -1,13 +1,7 @@
-# Chay bo kiem thu tu dong 10 bai test
-$ErrorActionPreference = "Continue"
-
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $scriptDir
-
-Write-Host "=====================================================" -ForegroundColor Cyan
-Write-Host " CHAY BO TEST TU DONG KIEM TRA HE THONG (10 TESTS)    " -ForegroundColor Cyan
-Write-Host "=====================================================" -ForegroundColor Cyan
-
-$env:PYTHONPATH = Join-Path $scriptDir "python-service"
-
-python "tests/test_fixes.py"
+# Run the same combined suite as CI, from any current directory.
+$ErrorActionPreference = 'Stop'
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+$pythonPath = Join-Path $repoRoot '.venv/Scripts/python.exe'
+if (-not (Test-Path -LiteralPath $pythonPath)) { $pythonPath = 'python' }
+& $pythonPath (Join-Path $repoRoot 'scripts/verify.py')
+exit $LASTEXITCODE

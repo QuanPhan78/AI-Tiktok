@@ -18,6 +18,10 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "[OK] Docker dang hoat dong. Dang build va khoi dong container..." -ForegroundColor Cyan
 docker compose up -d --build
+if ($LASTEXITCODE -ne 0) {
+    Write-Host '[LOI] Docker chua khoi dong thanh cong. Kiem tra thong bao ben tren.' -ForegroundColor Red
+    exit $LASTEXITCODE
+}
 
 Write-Host "`n[SUCCESS] Stack Docker da khoi dong thanh cong!" -ForegroundColor Green
 Write-Host "- FastAPI: http://127.0.0.1:8000/docs" -ForegroundColor Green

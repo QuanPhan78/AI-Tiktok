@@ -7,5 +7,3 @@ python-multipart
 python-dotenv
 notion-client==2.2.1
 cryptography
-cryptography
-notion-client==2.2.1

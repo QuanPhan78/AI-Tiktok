@@ -1,0 +1,42 @@
+name: Content Studio integration
+
+on:
+  push:
+    branches: [main, Automation, 'docs/**', 'feat/**', 'fix/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: '3.12'
+          - os: windows-latest
+            python: '3.13'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: |
+            requirements*.txt
+            integrations/long-v2/python-service/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements-test.txt
+      - run: python scripts/verify.py
+      - name: Validate Compose without local secrets
+        if: runner.os == 'Linux'
+        run: docker compose --env-file .env.example -f docker-compose.yml -f docker-compose.acceptance.yml config --quiet
+        working-directory: integrations/long-v2

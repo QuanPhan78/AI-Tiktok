@@ -168,7 +168,7 @@ class Studio:
             if quality["qc_score"] < 8 or blocking:
                 s["validation"] = [f"{issue['label']}: {issue['message']} — “{issue['quote']}”" for issue in blocking]
                 if quality["qc_score"] < 8:
-                    s["validation"].insert(0, f"Điểm QC {quality['qc_score']:g}/10, cần ít nhất 8. " + quality["feedback"])
+                    s["validation"].insert(0, f"Điểm kiểm tra nội dung {quality['qc_score']:g}/10, cần ít nhất 8. " + quality["feedback"])
                 s["status"] = "needs_changes"
                 return
             s["approved"]["6"] = value
@@ -180,7 +180,7 @@ class Studio:
                 s["status"] = "needs_changes"
                 return
         else:
-            raise ValueError("Đã hoàn tất. Bạn có thể xuất gói hoặc gửi sang Long.")
+            raise ValueError("Đã chốt prompt. Bạn có thể tải gói hoặc mở Gemini để tạo video.")
         s["step"] += 1
         s["draft"] = None
         s["validation"] = []
@@ -257,22 +257,22 @@ class Studio:
         if parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.scheme not in ("http", "https") or not parsed.hostname:
             raise ValueError("WEBHOOK_V2_URL không hợp lệ; không đặt token trong URL.")
         if not local and (parsed.scheme != "https" or not token):
-            raise ValueError("Webhook máy Long phải dùng HTTPS và có WEBHOOK_V2_TOKEN trong .env.")
+            raise ValueError("Để lưu vào Notion, địa chỉ webhook từ xa cần dùng HTTPS và WEBHOOK_V2_TOKEN trong .env.")
         headers = {"X-Content-Token": token} if token else {}
         with httpx.Client(timeout=150, trust_env=False, follow_redirects=False) as client:
             response = client.post(url, json=bundle, headers=headers)
             if 300 <= response.status_code < 400:
-                raise ValueError("Webhook chuyển hướng; kiểm tra lại URL production v2 của Long.")
+                raise ValueError("Webhook chuyển hướng. Kiểm tra địa chỉ webhook v2 dùng để lưu vào Notion.")
             response.raise_for_status()
             result = response.json()
         if result.get("success") is not True:
-            raise ValueError("Long chưa xác nhận lưu thành công. Kiểm tra workflow và Notion, sau đó gửi lại.")
+            raise ValueError("Chưa xác nhận lưu nội dung vào Notion. Kiểm tra Notion và quy trình tự động hóa rồi thử lại.")
         data = result.get("data") or {}
         if data.get("request_id") != bundle["request_id"] or data.get("revision") != bundle["revision"]:
             raise ValueError("Phản hồi bàn giao không khớp mã yêu cầu hoặc phiên bản.")
         encoded = json.dumps(bundle, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         if data.get("payload_sha256") != hashlib.sha256(encoded).hexdigest():
-            raise ValueError("Bản nhận của Long chưa khớp toàn bộ nội dung đã gửi.")
+            raise ValueError("Biên nhận lưu vào Notion chưa khớp với nội dung đã gửi.")
         allowed = ("request_id", "revision", "notion_page_id", "notion_database_id", "payload_sha256", "duplicate")
         s["handoff"] = {"status": "received", **{k: data[k] for k in allowed if k in data}}
 
@@ -285,9 +285,9 @@ class Studio:
         if data.get("version") != video["version"]:
             raise ValueError("Phiên bản MP4 đã thay đổi. Hãy tải lại và xem trước video.")
         if handoff.get("status") != "received" or handoff.get("revision") != video["bundle_revision"]:
-            raise ValueError("Cần bàn giao bản prompt hiện tại sang Automation trước khi gửi video.")
+            raise ValueError("Bấm Lưu nội dung vào Notion trước khi gửi video để duyệt trên Telegram.")
         if method == "GET" and video["status"] == "ATTACHED":
-            raise ValueError("Hãy bấm Gửi duyệt video trước khi đọc trạng thái.")
+            raise ValueError("Bấm Gửi video để duyệt trên Telegram trước khi cập nhật trạng thái.")
         path = self.store.video_path(video)
         if method == "POST" and not path.is_file():
             raise ValueError("Tệp MP4 bị thiếu. Hãy tải lại tệp.")

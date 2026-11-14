@@ -74,9 +74,11 @@ JSON đầy đủ và receipt SQLite nằm ở `/data`, mount volume `handoff_da
 
 ## 5. Áp dụng vào repo hiện có của Long
 
-Review diff của `python-service/app/main.py`, hai module v2, Compose, workflow và script trước khi áp dụng. `main.py` cần import/include router v2; không chép đè file nếu repo Long đã có thay đổi mới. Giữ `.env`, workflow v1 và volume hiện tại; bổ sung volume `handoff_data`, các biến v2 cùng database thử. `SOURCE_MANIFEST.json` liệt kê hash các file đóng gói để đối chiếu.
+Review diff của `python-service/app/main.py`, hai module v2, Compose, workflow và script trước khi áp dụng. `main.py` cần import/include router v2; không chép đè file nếu repo Long đã có thay đổi mới. Giữ `.env`, workflow v1 và volume hiện tại; bổ sung volume `handoff_data`, các biến v2 cùng database thử. `SOURCE_MANIFEST.json` liệt kê toàn bộ source đóng gói để đối chiếu, với SHA-256 văn bản UTF-8 đã chuẩn hóa xuống dòng LF để giống nhau trên Windows/Linux. Khi sửa gói, chạy `python scripts/package_manifest.py` từ gốc repo rồi chạy kiểm thử.
 
 Từ gốc AI-Tiktok, kiểm thử mặc định dùng gói này. Muốn kiểm tra một checkout khác của Long, đặt `LONG_AUTOMATION_ROOT` bằng đường dẫn tới thư mục có `python-service/` và `n8n/`, rồi chạy lại suite. Hai bản contract phải giống nguyên vẹn.
+
+Lệnh kiểm thử phát hành là `python scripts/verify.py` từ gốc repo sau khi cài `requirements-test.txt` và Node.js 20 trở lên. `run_tests.ps1` cũng gọi lệnh chung này. Lệnh phát hành luôn kiểm tra gói ngay trong repo và cách ly cấu hình thật. Để đối chiếu checkout khác bằng `LONG_AUTOMATION_ROOT`, chạy riêng `python -m unittest tests.test_handoff_v2 -q`.
 
 Xem [runbook SEJOY](../../docs/SEJOY_ACCEPTANCE_RUNBOOK.md) và [API web](../../docs/CONTENT_STUDIO_V2.md).
 
@@ -156,6 +158,6 @@ Invoke-BotApi getWebhookInfo |
 
 ### Gửi và nhận quyết định
 
-Tại Bước 7, **Gửi sang Long** để có biên nhận prompt. Sau đó gắn và xem trước MP4 tối đa 45 MB, rồi bấm **Gửi duyệt video**. Khi Telegram nhận clip, Notion chuyển sang `PENDING_REVIEW`. Chọn **Duyệt video** hoặc **Cần sửa** trong nhóm rồi bấm **Đọc trạng thái duyệt** ở web để đồng bộ.
+Tại Bước 7, bấm **Lưu nội dung vào Notion** để có biên nhận prompt. Bấm **Tải MP4 lên** để tải và xem trước tệp tối đa 45 MB, rồi bấm **Gửi video để duyệt trên Telegram**. Khi Telegram nhận clip, Notion chuyển sang `PENDING_REVIEW`. Chọn **Duyệt video** hoặc **Cần sửa** trong nhóm rồi bấm **Cập nhật trạng thái duyệt** ở web để đồng bộ.
 
 Khi gửi phiên bản MP4 thay thế, nút trong tin nhắn cũ hết hiệu lực. Phiên bản mới cần quyết định riêng. Kiểm thử v2 với database thử. Workflow lập lịch và đăng v1 phục vụ database v1. [Bàn giao đăng TikTok](../../docs/HANDOFF_CONTENT_STUDIO_V2.md#6-bàn-giao-để-đăng-tiktok).

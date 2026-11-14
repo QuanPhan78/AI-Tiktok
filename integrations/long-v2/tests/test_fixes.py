@@ -1,5 +1,6 @@
 import json
 import pytest
+from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
@@ -10,6 +11,7 @@ from app.tiktok_publisher import TikTokPublisher
 import app.notion_client as notion_client
 
 client = TestClient(app)
+ROOT = Path(__file__).resolve().parents[1]
 
 def test_p1_1_no_fake_published_without_simulation():
     """P1.1: Verify publisher raises real TikTokApiException when sandbox simulation is false."""
@@ -146,7 +148,7 @@ def test_p1_5_v2_endpoints_mounted():
 
 def test_p2_7_step8_timeout_branch():
     """P2.7: Verify Step8 workflow has IF Max Reached and polling timeout branch."""
-    with open("n8n/Step8 - TikTok Publish.json", "r", encoding="utf-8") as f:
+    with (ROOT / "n8n/Step8 - TikTok Publish.json").open(encoding="utf-8") as f:
         wf = json.load(f)
     node_names = [n["name"] for n in wf["nodes"]]
     assert "POST Lock Content" in node_names
@@ -157,13 +159,13 @@ def test_p2_7_step8_timeout_branch():
 
 def test_step5_workflows_revision_and_security():
     """Verify Step5 Send and Callback workflows have revision and webhook security."""
-    with open("n8n/Step5 - Send Approval Request.json", "r", encoding="utf-8") as f:
+    with (ROOT / "n8n/Step5 - Send Approval Request.json").open(encoding="utf-8") as f:
         send_wf = json.load(f)
     send_text = json.dumps(send_wf)
     assert "revision" in send_text
     assert "approve|{{ $json.request_id }}|{{ $json.revision || 1 }}" in send_text
 
-    with open("n8n/Step5 - Handle Approval Callback.json", "r", encoding="utf-8") as f:
+    with (ROOT / "n8n/Step5 - Handle Approval Callback.json").open(encoding="utf-8") as f:
         cb_wf = json.load(f)
     cb_text = json.dumps(cb_wf)
     assert "TELEGRAM_WEBHOOK_SECRET" in cb_text

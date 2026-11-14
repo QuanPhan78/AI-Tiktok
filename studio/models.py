@@ -2,7 +2,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 CTA = "Sản phẩm có ngay trên TikTok Shop, bấm vào giỏ hàng bên dưới góc trái màn hình để tham khảo sản phẩm bên chúng tôi nhé!"
-STEP_NAMES = ["Sản phẩm", "Tình huống", "Nhân vật", "Kế hoạch cảnh", "Lời thoại", "Tổng hợp", "Xuất prompt"]
+STEP_NAMES = ["Sản phẩm", "Tình huống", "Nhân vật", "Kế hoạch cảnh", "Lời thoại", "Tổng hợp", "Tạo và duyệt video"]
 REFERENCE = "Reference images: the attached product photo shows the product, and the attached character image shows the character. Keep the product and the character exactly as shown in these images."
 TAIL = "Aspect ratio 9:16. Stable pose for the first and last half second. No music. No watermark, no logo, no icons, no on-screen text, no subtitles."
 

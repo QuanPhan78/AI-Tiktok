@@ -1,9 +1,11 @@
 'use strict';
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const names = ['Sản phẩm','Tình huống','Nhân vật','Kế hoạch cảnh','Lời thoại','Tổng hợp','Xuất prompt'];
+const names = ['Sản phẩm','Tình huống','Nhân vật','Kế hoạch cảnh','Lời thoại','Tổng hợp','Tạo và duyệt video'];
 const stateNames = {awaiting_input:'Chờ tạo bản nháp',awaiting_approval:'Chờ bạn duyệt',processing:'Đang xử lý',ready:'Đã chốt bộ prompt',needs_changes:'Cần chỉnh sửa',error:'Chưa hoàn tất'};
 let session = null, library = [], poll = null, busy = false, renderedStep = '', outcomeSection = '';
+const geminiOrigin = 'http://127.0.0.1:8001';
+let geminiSelection = null;
 async function api(path, options={}) {
   const r = await fetch('/api/v2'+path, options);
   const d = await r.json();
@@ -12,6 +14,111 @@ async function api(path, options={}) {
 }
 function notice(message='') { $('#notice').hidden=!message; $('#notice').textContent=message; }
 function toast(t) { $('#toast').textContent=t; $('#toast').hidden=false; setTimeout(()=>$('#toast').hidden=true,2400); }
+function geminiSelectionMatches(s, selection) {
+  return Boolean(selection && s?.step === 7 && s.id === selection.sessionId &&
+    s.bundle?.revision === selection.bundleRevision);
+}
+function showGeminiSelection() {
+  const selection = geminiSelectionMatches(session, geminiSelection) ? geminiSelection : null;
+  document.querySelectorAll('[data-gemini-scene]').forEach(button => {
+    const selected = button.dataset.geminiScene === selection?.sceneId;
+    button.setAttribute('aria-pressed', String(selected && selection.status === 'prepared'));
+    const feedback = document.getElementById('gemini-feedback-' + button.dataset.geminiScene);
+    if (!feedback) return;
+    feedback.hidden = !selected;
+    feedback.textContent = selected ? selection.message : '';
+  });
+}
+function prepareGemini(sceneId) {
+  const s = session;
+  if (s?.step !== 7 || s.status === 'processing' || !s.bundle.scenes.some(scene => scene.id === sceneId)) return;
+  const selection = {
+    requestId: crypto.randomUUID(), sessionId: s.id, bundleRevision: s.bundle.revision,
+    sceneId, productName: s.product.name, status: 'waiting', message: 'Đang kết nối với tiện ích…'
+  };
+  geminiSelection = selection;
+  if (location.origin !== geminiOrigin) {
+    selection.status = 'unavailable';
+    selection.message = 'Mở Content Studio tại 127.0.0.1:8001 để dùng tiện ích, hoặc bấm Sao chép.';
+    showGeminiSelection();
+    return;
+  }
+  showGeminiSelection();
+  const {requestId, sessionId, bundleRevision, productName} = selection;
+  window.postMessage({
+    type: 'content-studio:gemini-prepare',
+    selection: {requestId, sessionId, bundleRevision, sceneId, productName}
+  }, geminiOrigin);
+  setTimeout(() => {
+    if (geminiSelection !== selection || selection.status !== 'waiting') return;
+    selection.status = 'unavailable';
+    selection.message = 'Chưa thấy tiện ích. Hãy cài hoặc tải lại trang, hoặc bấm Sao chép.';
+    showGeminiSelection();
+  }, 1800);
+}
+window.addEventListener('message', event => {
+  const result = event.data;
+  const selection = geminiSelection;
+  if (event.source !== window || event.origin !== geminiOrigin ||
+      result?.type !== 'content-studio:gemini-prepared' || !selection ||
+      result.requestId !== selection.requestId || typeof result.ok !== 'boolean') return;
+  selection.status = result.ok ? 'prepared' : 'unavailable';
+  selection.message = result.ok
+    ? `Đã chọn cảnh ${selection.sceneId} · prompt r${selection.bundleRevision}. Trong tab Gemini, mở tiện ích và bấm Điền prompt.`
+    : 'Tiện ích chưa nhận được cảnh. Hãy chọn lại hoặc bấm Sao chép.';
+  showGeminiSelection();
+});
+function notebookPanel(s, exportUrl) {
+  const {scenes, revision, character} = s.bundle;
+  const order = scenes.map(scene => scene.id).join(' → ');
+  const audio = character.audio_mode === 'voiceover' ? 'Thuyết minh khi dựng' : 'Nói trực tiếp';
+  const oldPlan = s.approved['4'].scenes.some(scene => !scene.start_en?.trim() || !scene.end_en?.trim());
+  return `<section id="notebook-input" class="notebook-input" aria-labelledby="notebook-title">
+    <h3 id="notebook-title">Bộ đầu vào Notebook</h3>
+    <p class="helper">r${revision} · Cảnh ${order} · Dọc 9:16 · Mục tiêu ${scenes[0].duration_seconds} giây mỗi cảnh · ${audio}</p>
+    <p class="helper">Dùng bộ cảnh đã duyệt trong Notebook trên Gemini. Bật <strong>Tạo video</strong>, chọn <strong>Dọc 9:16</strong> và đính kèm ảnh sản phẩm, ảnh nhân vật từ cùng ZIP. Tạo và kiểm tra từng cảnh trong cùng chat. Nếu Notebook thiếu công cụ Video, dùng một chat Gemini có <strong>Tạo video</strong>.</p>
+    <button type="button" data-notebook-url="${exportUrl}/notebook?revision=${revision}">Sao chép bộ cảnh</button>
+    <p id="notebook-copy-status" class="helper" role="status" hidden></p>
+    <div id="notebook-manual-copy" hidden>
+      <label for="notebook-text">Bộ cảnh để sao chép thủ công</label>
+      <textarea id="notebook-text" class="prompt" readonly></textarea>
+    </div>
+    ${oldPlan ? '<p class="helper notebook-plan-note">Bản này chưa ghi riêng tư thế đầu và cuối cảnh. Nếu cần chỉnh mạch nối, cập nhật Bước 4 và duyệt lại.</p>' : ''}
+  </section>`;
+}
+async function copyNotebook(button) {
+  const status = $('#notebook-copy-status');
+  const manualCopy = $('#notebook-manual-copy');
+  const preview = $('#notebook-text');
+  button.disabled = true;
+  manualCopy.hidden = true;
+  status.hidden = false;
+  status.textContent = 'Đang lấy bộ cảnh đã duyệt…';
+  try {
+    const response = await fetch(button.dataset.notebookUrl, {cache: 'no-store'});
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(typeof error.detail === 'string' ? error.detail : 'Chưa lấy được bộ cảnh. Hãy thử lại.');
+    }
+    const text = await response.text();
+    if (!button.isConnected) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      status.textContent = 'Đã sao chép bộ cảnh. Bạn có thể dán vào Notebook.';
+    } catch {
+      if (!button.isConnected) return;
+      preview.value = text;
+      manualCopy.hidden = false;
+      preview.focus();
+      preview.select();
+      status.textContent = 'Hãy sao chép từ ô văn bản bên dưới.';
+    }
+  } catch (error) {
+    status.textContent = error instanceof TypeError ? 'Chưa kết nối được với Content Studio. Hãy thử lại.' : error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
 function revealOutcome() {
   const contextual = outcomeSection ? $(outcomeSection) : null;
   const target = !$('#notice').hidden ? $('#notice') : contextual || (session?.step===6 ? $('#qc-result') : session?.step===7 ? $('#exports') : $('#editor'));
@@ -30,10 +137,10 @@ function qcTarget(field) {
 function qcReport(s) {
   const processing=s.status==='processing', problems=s.validation||[], details=s.validation_details||[];
   const blocked=s.status==='error'||s.status==='needs_changes';
-  const score=s.quality?`<span class="qc-score">QC ${esc(s.quality.qc_score)}/10 · cần từ 8</span>`:'';
+  const score=s.quality?`<span class="qc-score">Điểm ${esc(s.quality.qc_score)}/10 · cần từ 8</span>`:'';
   const title=processing?'Đang kiểm tra phương án':blocked?'Chưa thể xuất prompt':s.quality?'Kết quả kiểm tra':'Kiểm tra trước khi xuất';
   let html=`<section id="qc-result" class="qc-result ${blocked?'qc-blocked':''}" tabindex="-1" role="${blocked?'alert':'status'}" aria-live="polite" aria-busy="${processing}"><div class="qc-heading"><h3>${title}</h3>${score}</div>`;
-  if(processing) return html+'<p>Đang kiểm tra QC và dữ liệu. Kết quả sẽ xuất hiện tại đây; nội dung đã duyệt được giữ nguyên.</p></section>';
+  if(processing) return html+'<p>Đang kiểm tra nội dung. Kết quả sẽ xuất hiện tại đây; nội dung đã duyệt được giữ nguyên.</p></section>';
   if(s.error)html+=`<p class="qc-error">${esc(s.error)}</p>`;
   if(details.length)html+='<h4>Lỗi cần sửa</h4>'+details.map(issue=>`<div class="qc-issue"><strong>${esc(issue.label||issue.field)}</strong><p>${esc(issue.message)}</p><blockquote>${esc(issue.quote)}</blockquote>${qcTarget(issue.field)?`<button class="quiet" data-qc-target="${esc(qcTarget(issue.field))}">Xem nội dung cần sửa ↑</button>`:''}</div>`).join('');
   const detailed = new Set(details.map(i=>`${i.label}: ${i.message} — “${i.quote}”`));
@@ -42,28 +149,42 @@ function qcReport(s) {
   if(s.quality?.feedback)html+=`<p class="helper">${esc(s.quality.feedback)}</p>`;
   const warnings=s.quality?.warnings||s.warnings||[];
   if(warnings.length)html+='<div class="qc-warnings"><strong>Lời nhắc · không tự chặn xuất</strong><ul>'+warnings.map(w=>`<li>${esc(w)}</li>`).join('')+'</ul></div>';
-  if(!blocked&&!s.quality)html+='<p>Bấm chốt để kiểm tra QC. Chỉ chuyển sang Bước 7 khi điểm đạt yêu cầu, không còn lỗi chặn và dữ liệu hợp lệ.</p>';
+  if(!blocked&&!s.quality)html+='<p>Bấm chốt để kiểm tra nội dung. Chỉ chuyển sang Bước 7 khi điểm đạt yêu cầu, không còn lỗi chặn và dữ liệu hợp lệ.</p>';
   if(blocked)html+=s.status==='error'?'<p class="helper">Kiểm tra thông báo lỗi rồi thử chốt lại. Bản chỉnh sửa được giữ nguyên; chưa có nội dung nào được tự duyệt.</p>':'<p class="helper">Sửa đúng trường/cảnh được chỉ ra rồi bấm chốt lại. Lời thoại đã duyệt không được AI tự viết lại.</p>';
   return html+'</section>';
 }
 function text(id,label,value='',extra='') { return `<label for="${id}">${label}</label><input id="${id}" value="${esc(value)}" ${extra}>`; }
 function area(id,label,value='',cls='') { return `<label for="${id}">${label}</label><textarea id="${id}" class="${cls}">${esc(value)}</textarea>`; }
 const val = id => document.getElementById(id)?.value ?? '';
-const videoStates = {ATTACHED:'Đã gắn MP4',PENDING_REVIEW:'Đang chờ duyệt video',APPROVED:'Video đã được duyệt',NEEDS_REVISION:'Video cần sửa'};
+const videoStates = {
+  ATTACHED: 'Đã tải MP4 lên',
+  PENDING_REVIEW: 'Đang chờ duyệt trên Telegram',
+  APPROVED: 'Video đã được duyệt',
+  NEEDS_REVISION: 'Video cần sửa'
+};
 function videoPanel(s) {
-  const revision=s.bundle.revision;
-  const v=s.video?.bundle_revision===revision?s.video:null;
-  const handedOff=s.handoff?.revision===revision&&s.handoff.status==='received';
-  return `<section class="scene" id="video-review"><h3>Video của bản prompt r${revision}</h3>
-    ${s.error&&outcomeSection==='#video-review'?`<p class="error" role="alert">${esc(s.error)}</p>`:''}
-    <label for="video-file">${v?'Thay video MP4':'Chọn video MP4'}</label><input id="video-file" type="file" accept="video/mp4,.mp4">
+  const revision = s.bundle.revision;
+  const video = s.video?.bundle_revision === revision ? s.video : null;
+  const savedToNotion = s.handoff?.status === 'received' && s.handoff.revision === revision;
+  const canSubmit = savedToNotion && video?.status === 'ATTACHED';
+  return `<section class="scene" id="video-review">
+    <h3>Tải video lên và duyệt</h3>
+    ${s.error && outcomeSection === '#video-review' ? `<p class="error" role="alert">${esc(s.error)}</p>` : ''}
+    <label for="video-file">${video ? 'Chọn tệp MP4 thay thế' : 'Chọn tệp MP4'}</label>
+    <input id="video-file" type="file" accept="video/mp4,.mp4">
     <p class="helper">Tối đa 45 MB. Khi gửi bản thay thế, nút duyệt của video trước sẽ hết hiệu lực.</p>
-    <button id="attach-video">${v?'Lưu MP4 thay thế':'Gắn MP4'}</button>
-    ${v?`<video controls playsinline preload="metadata" src="/api/v2/sessions/${s.id}/videos/${v.version}" aria-label="Xem trước video"></video>
-    <p>${esc(v.filename)} · MP4 v${v.version} · ${esc(videoStates[v.status])}</p>
-    <button class="primary" id="submit-video-review" ${!handedOff||v.status!=='ATTACHED'?'disabled':''}>Gửi duyệt video</button>
-    ${v.status!=='ATTACHED'?'<button id="refresh-video-review">Đọc trạng thái duyệt</button>':''}
-    ${!handedOff?'<p class="helper">Gửi bộ prompt sang Long trước khi gửi MP4 vào hàng duyệt.</p>':''}`:''}</section>`;
+    <button id="attach-video">${video ? 'Tải bản thay thế lên' : 'Tải MP4 lên'}</button>
+    ${video ? `<video controls playsinline preload="metadata" src="/api/v2/sessions/${s.id}/videos/${video.version}" aria-label="Xem trước video"></video>
+    <p>${esc(video.filename)} · MP4 v${video.version} · ${esc(videoStates[video.status])}</p>` : ''}
+    <div class="video-review-actions">
+      ${savedToNotion
+        ? `<p class="notion-saved" role="status">Đã lưu nội dung r${revision} vào Notion</p>`
+        : `<button id="handoff">Lưu nội dung vào Notion</button>
+          <p class="helper">Lưu nội dung r${revision} vào Notion trước khi gửi video để duyệt trên Telegram.</p>`}
+      ${video ? `<button class="primary" id="submit-video-review" ${canSubmit ? '' : 'disabled'}>Gửi video để duyệt trên Telegram</button>
+      ${video.status !== 'ATTACHED' ? '<button id="refresh-video-review">Cập nhật trạng thái duyệt</button>' : ''}` : ''}
+    </div>
+  </section>`;
 }
 function showDialogueCount(field) {
   const words=field.value.trim().split(/\s+/).filter(Boolean).length;
@@ -93,9 +214,9 @@ async function upload(input) {
   return (await api('/assets',{method:'POST',body:form})).id;
 }
 function context() {
-  if (!session) return '<div class="eyebrow">MỘT QUY TRÌNH CHUNG</div><h3>Ý tưởng rõ ràng.<br>Nhân vật nhất quán.</h3><p>Chuẩn bị nội dung cùng Bảo, chuyển dữ liệu có cấu trúc sang Long.</p><hr><p>Mỗi cảnh là một clip độc lập 8 giây. Ứng dụng này chuẩn bị prompt và dữ liệu; chưa tạo video.</p>';
+  if (!session) return '<h3>Quy trình làm video</h3><p>Chốt nội dung, tạo video trên Gemini, rồi gửi duyệt trên Telegram.</p><p>Mỗi cảnh dự kiến 8 giây. Hãy kiểm tra thời lượng trên clip thực tế.</p>';
   const p=session.product,c=session.approved['3']?.character;
-  return `<div class="eyebrow">SẢN PHẨM ĐANG LÀM</div>${p.asset_id?`<img class="thumb" src="/api/v2/assets/${encodeURIComponent(p.asset_id)}" alt="Ảnh sản phẩm">`:''}<h3>${esc(p.name)}</h3><p>${esc(p.uses)}</p><b>${esc(p.price)}</b><p><a href="${esc(p.product_link)}" target="_blank" rel="noopener noreferrer">Xem sản phẩm ↗</a></p>${c?`<hr><div class="eyebrow">NHÂN VẬT ĐÃ CHỌN</div><img class="thumb portrait" src="${c.asset_id?'/api/v2/assets/'+encodeURIComponent(c.asset_id):'/api/v2/characters/'+c.id+'/image'}" alt="${esc(c.name)}"><h3>${esc(c.id)} · ${esc(c.name)}</h3><p>${esc(c.voice)}</p>`:''}<hr><p>Đã xong: ${Object.keys(session.approved).join(', ')||'Chưa có bước nào'}<br>Đang chờ: ${esc(session.pending_action)}</p><small>Mã: ${esc(session.request_id)}<br>Phiên bản: ${session.revision}</small>`;
+  return `<div class="eyebrow">SẢN PHẨM ĐANG LÀM</div>${p.asset_id?`<img class="thumb" src="/api/v2/assets/${encodeURIComponent(p.asset_id)}" alt="Ảnh sản phẩm">`:''}<h3>${esc(p.name)}</h3><p>${esc(p.uses)}</p><b>${esc(p.price)}</b><p><a href="${esc(p.product_link)}" target="_blank" rel="noopener noreferrer">Xem sản phẩm ↗</a></p>${c?`<hr><div class="eyebrow">NHÂN VẬT ĐÃ CHỌN</div><img class="thumb portrait" src="${c.asset_id?'/api/v2/assets/'+encodeURIComponent(c.asset_id):'/api/v2/characters/'+c.id+'/image'}" alt="${esc(c.name)}"><h3>${esc(c.id)} · ${esc(c.name)}</h3><p>${esc(c.voice)}</p>`:''}<hr><p>Đã xong: ${Object.keys(session.approved).join(', ')||'Chưa có bước nào'}${session.step < 7 ? `<br>Đang chờ: ${esc(session.pending_action)}` : ''}</p><small>Mã: ${esc(session.request_id)}<br>Phiên bản: ${session.revision}</small>`;
 }
 function productForm(p={}) {
   return `${text('product-name','Tên sản phẩm',p.name,'required maxlength="300"')}${area('product-uses','Công dụng đã xác nhận',p.uses)}<div class="grid2">${text('product-price','Giá (giữ nguyên cách ghi)',p.price,'required')}${text('product-link','Link sản phẩm',p.product_link,'type="url" required')}</div><label for="product-image">Ảnh sản phẩm${p.asset_id?' · Đã có ảnh, chỉ chọn nếu muốn thay':''}</label><input id="product-image" type="file" accept="image/png,image/jpeg,image/webp"><p class="helper">PNG, JPEG hoặc WebP · tối đa 10 MB. Thông tin và ảnh này sẽ được dùng trong bộ bàn giao.</p>`;
@@ -119,7 +240,7 @@ function schedulePoll() {
 async function action(kind,data={}) {
   if(busy||!session||session.status==='processing')return;
   busy=true; notice();
-  outcomeSection=kind.endsWith('_video_review')?'#video-review':'';
+  outcomeSection=(kind === 'handoff' || kind.endsWith('_video_review')) ? '#video-review' : '';
   const sid=session.id;
   const submittedPublishing=kind==='approve'&&session.step===6?data.publishing:null;
   try {
@@ -169,22 +290,28 @@ function render() {
     if(d)html+=area('dialogue','Lời thoại đang chờ duyệt',d.text)+'<p class="helper" id="dialogue-count" aria-live="polite"></p>';
   } else if(step===6&&d){
     html+='<h3>Bảng 1 · Lời thoại đã chốt</h3><table><thead><tr><th>Cảnh</th><th>Phần</th><th>Lời thoại</th></tr></thead><tbody>'+a['4'].scenes.map(x=>`<tr id="dialogue-row-${x.id}"><td>${x.id}</td><td>${esc(x.part)}</td><td>${esc(s.dialogues[x.id])}${x.id!=='4'?`<br><button class="quiet" data-dialogue="${x.id}">Sửa lời thoại cảnh này</button>`:''}</td></tr>`).join('')+'</tbody></table>';
-    html+=`<h3>Bảng 2 · Nội dung để dựng và đăng bài</h3><table><tbody><tr><th>Slogan</th><td>${area('slogans','5 slogan, mỗi dòng một câu',d.slogans.join('\n'))}</td></tr><tr><th>Caption</th><td>${d.captions.map((c,i)=>area('caption-'+i,'Caption '+(i+1),c)).join('')}<label for="selected-caption">Caption dùng để bàn giao</label><select id="selected-caption">${d.captions.map((_,i)=>`<option value="${i}" ${i===d.selected_caption?'selected':''}>Caption ${i+1}</option>`).join('')}</select></td></tr><tr><th>Hashtag</th><td>${area('hashtags','8–10 hashtag',d.hashtags.join(' '))}</td></tr><tr><th>Bình luận ghim</th><td>${area('pinned','Giữ nguyên link sản phẩm',d.pinned_comment)}</td></tr><tr><th>Chữ thêm khi dựng</th><td>${text('overlay2','Cảnh 2 · tên và công dụng ngắn',d.overlay_scene2)}${text('overlay4','Cảnh cuối · giá',d.overlay_scene4,'readonly')}</td></tr></tbody></table><p class="helper">Chốt sẽ kiểm tra toàn bộ nội dung trước khi xuất prompt. QC không tự thay đổi lời thoại bạn đã duyệt.</p>`;
+    html+=`<h3>Bảng 2 · Nội dung để dựng và đăng bài</h3><table><tbody><tr><th>Slogan</th><td>${area('slogans','5 slogan, mỗi dòng một câu',d.slogans.join('\n'))}</td></tr><tr><th>Caption</th><td>${d.captions.map((c,i)=>area('caption-'+i,'Caption '+(i+1),c)).join('')}<label for="selected-caption">Caption dùng để bàn giao</label><select id="selected-caption">${d.captions.map((_,i)=>`<option value="${i}" ${i===d.selected_caption?'selected':''}>Caption ${i+1}</option>`).join('')}</select></td></tr><tr><th>Hashtag</th><td>${area('hashtags','8–10 hashtag',d.hashtags.join(' '))}</td></tr><tr><th>Bình luận ghim</th><td>${area('pinned','Giữ nguyên link sản phẩm',d.pinned_comment)}</td></tr><tr><th>Chữ thêm khi dựng</th><td>${text('overlay2','Cảnh 2 · tên và công dụng ngắn',d.overlay_scene2)}${text('overlay4','Cảnh cuối · giá',d.overlay_scene4,'readonly')}</td></tr></tbody></table><p class="helper">Chốt sẽ kiểm tra toàn bộ nội dung trước khi xuất prompt. Lời thoại đã duyệt được giữ nguyên.</p>`;
   } else if(step===7){
     const b=s.bundle;
-    html+=`<p>Bộ prompt đã được lắp từ nội dung bạn duyệt. Tải ZIP để lấy cả ảnh sản phẩm và ảnh nhân vật.</p><div class="downloads" id="exports" tabindex="-1" aria-label="Tải gói đã duyệt">${['zip','json','markdown'].map(f=>`<a href="/api/v2/sessions/${s.id}/export/${f}">↓ ${f==='markdown'?'Markdown':f.toUpperCase()}</a>`).join('')}</div>`;
+    const exportUrl = `/api/v2/sessions/${encodeURIComponent(s.id)}/export`;
+    html+=`<p>Bộ prompt đã được lắp từ nội dung bạn duyệt. Tải ZIP để lấy cả ảnh sản phẩm và ảnh nhân vật.</p><div class="downloads" id="exports" tabindex="-1" aria-label="Tạo video và tải gói đã duyệt"><a class="primary" id="open-gemini" href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer">Mở Gemini để tạo video ↗</a>${['zip','json','markdown'].map(f=>`<a href="${exportUrl}/${f}?revision=${b.revision}">↓ ${f==='markdown'?'Markdown':f.toUpperCase()}</a>`).join('')}</div>`;
+    html+=notebookPanel(s, exportUrl);
+    html+=`<p class="helper gemini-help">Mỗi lượt bấm <strong>Chọn cảnh cho Gemini</strong>, rồi bấm <strong>Điền prompt</strong> trong tiện ích ở tab Gemini.</p>`;
     for(const w of b.qc.warnings)html+=`<p class="helper">${esc(w)}</p>`;
-    html+=b.scenes.map(x=>`<div class="scene"><div class="scene-heading"><h3>Cảnh ${x.id} · ${esc(x.part)}</h3><button class="quiet" data-copy="prompt-${x.id}">Sao chép</button></div><textarea readonly class="prompt" id="prompt-${x.id}">${esc(x.prompt_en)}</textarea>${b.character.audio_mode==='voiceover'?`<p>Lời thuyết minh riêng: ${esc(x.dialogue_vi)}</p>`:''}<p class="helper">${x.overlay_text?'Chữ khi dựng: '+esc(x.overlay_text):'Không chèn chữ trong clip sinh bởi AI.'}</p></div>`).join('');
+    html+=b.scenes.map(x=>`<div class="scene"><div class="scene-heading"><h3>Cảnh ${x.id} · ${esc(x.part)}</h3><div class="scene-tools"><button class="quiet" data-copy="prompt-${x.id}">Sao chép</button><button class="quiet" data-gemini-scene="${x.id}" aria-pressed="false">Chọn cảnh cho Gemini</button></div></div><p id="gemini-feedback-${x.id}" class="helper gemini-feedback" role="status" hidden></p><textarea readonly class="prompt" id="prompt-${x.id}">${esc(x.prompt_en)}</textarea>${b.character.audio_mode==='voiceover'?`<p>Lời thuyết minh riêng: ${esc(x.dialogue_vi)}</p>`:''}<p class="helper">${x.overlay_text?'Chữ khi dựng: '+esc(x.overlay_text):'Không chèn chữ trong clip sinh bởi AI.'}</p></div>`).join('');
     html+=`<details open><summary>Nội dung đăng bài</summary>${area('export-caption','Caption đã chọn',b.publishing.captions[b.publishing.selected_caption])}<button class="quiet" data-copy="export-caption">Sao chép caption</button>${area('export-tags','Hashtag',b.publishing.hashtags.join(' '))}<button class="quiet" data-copy="export-tags">Sao chép hashtag</button>${area('export-pinned','Bình luận ghim',b.publishing.pinned_comment)}<button class="quiet" data-copy="export-pinned">Sao chép bình luận</button><p>${b.publishing.slogans.map(esc).join(' · ')}</p></details>`;
-    if(s.handoff)html+=`<div class="message">Long đã nhận bộ prompt r${s.handoff.revision}.</div>`;
+    html+=`<p class="helper">Lưu và xem file sau mỗi lượt. Dùng bản nối cuối nếu đủ cảnh đúng thứ tự. Với clip riêng, ghép theo thứ tự, cân âm lượng và thêm chữ khi dựng. Kiểm tra nhân vật, sản phẩm, lời thoại và phần nối trước khi xuất MP4 dọc để duyệt.</p>`;
   }
   if(step===6)html+=qcReport(s);
   if(step<7){html+=`<div class="question">${['Thông tin sản phẩm này đã đúng chưa?','Bạn chọn tình huống nào?','Bạn có đồng ý nhân vật và giọng nói này không?','Bạn có đồng ý kế hoạch các cảnh này không?','Bạn đã chốt lời thoại cảnh này chưa?','Bạn có chốt phương án cuối cùng này không?'][step-1]}</div><div class="actions"><button id="generate">${d?'Tạo lại bản nháp':'Tạo bản nháp'}</button>${d?`<button id="approve" class="primary">${step===6?'Chốt và xuất prompt →':step===5?'Chốt cảnh này →':'Đồng ý và tiếp tục →'}</button>`:''}</div>`;}
-  else html+='<div class="actions"><button id="handoff" class="primary">Gửi sang Long →</button><span class="helper">Chỉ gửi bộ nội dung đã chốt.</span></div>'+videoPanel(s);
+  else html+=videoPanel(s);
   if(s.status==='processing')html+='<p class="busy"><span class="spinner"></span> Đang xử lý nội dung. Bạn có thể đóng trang và quay lại.</p>';
   editor.innerHTML=html;
   if($('#dialogue-count'))showDialogueCount($('#dialogue'));
-  if(step===7)editor.querySelectorAll('textarea').forEach(e=>e.readOnly=true);
+  if(step===7){
+    editor.querySelectorAll('textarea').forEach(e=>e.readOnly=true);
+    showGeminiSelection();
+  }
   if(s.status==='processing')editor.querySelectorAll('button,input,textarea,select').forEach(e=>e.disabled=true);
 }
 async function approve() {
@@ -205,6 +332,8 @@ document.addEventListener('click',async e=>{
     if(b.dataset.session)return await openSession(b.dataset.session);
     if(b.dataset.step){if(confirm('Quay lại bước này sẽ hủy xác nhận các bước phụ thuộc phía sau. Lịch sử vẫn được lưu.'))await action('reopen',{step:Number(b.dataset.step)});return;}
     if(b.dataset.dialogue)return await action('reopen',{step:5,scene_id:b.dataset.dialogue});
+    if(b.dataset.geminiScene){prepareGemini(b.dataset.geminiScene);return;}
+    if(b.dataset.notebookUrl){await copyNotebook(b);return;}
     if(b.dataset.copy){await navigator.clipboard.writeText(val(b.dataset.copy));toast('Đã sao chép');return;}
     if(b.id==='new-session'){clearTimeout(poll);session=null;localStorage.removeItem('studio-session');notice();render();await refreshList();}
     if(b.id==='generate')await action('generate',session.step===4?{scene_count:Number(val('scene-count'))}:{});

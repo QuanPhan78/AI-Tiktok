@@ -8,7 +8,8 @@ Content Studio giúp nhóm duyệt nội dung TikTok qua 7 bước, tạo gói p
 flowchart LR
     I["Thông tin và ảnh sản phẩm"] --> C["Content Studio · duyệt 7 bước"]
     C --> Z["ZIP prompt và ảnh"]
-    Z --> M["Tạo clip bên ngoài · gắn MP4"]
+    Z --> G["Notebook · bộ cảnh và tiện ích Gemini"]
+    G --> M["Tạo clip · tải MP4 về Studio"]
     C --> N["n8n · bàn giao JSON"]
     N --> D["Notion · DRAFT"]
     M --> T["Telegram · duyệt đúng MP4"]
@@ -37,7 +38,23 @@ Mở [Content Studio ở cổng 8001](http://127.0.0.1:8001/app). Docker Desktop
 | Cài Automation, n8n, Notion và bot Telegram | [Cấu hình automation v2](integrations/long-v2/README.md) |
 | Tích hợp API hoặc sửa hệ thống | [API và cấu trúc dữ liệu](docs/CONTENT_STUDIO_V2.md) |
 | Đối chiếu nghiệm thu SEJOY và chạy kiểm thử | [Runbook SEJOY](docs/SEJOY_ACCEPTANCE_RUNBOOK.md) |
+| Điền prompt vào chat Gemini trên Chrome/Edge | [Cài tiện ích Gemini](extensions/gemini/README.md) |
+| Theo dõi bản hợp nhất và cách cập nhật source | [Đồng bộ các nhánh](docs/REPOSITORY_SYNC.md) |
+| Kế hoạch trợ lý chat trong Content Studio | [Kế hoạch chatbox](docs/CHATBOX_PLAN.md) |
 | Xem ZIP và JSON mẫu | [Dữ liệu tổng hợp](examples/handoff-v2/README.md) |
 | Vận hành tích hợp cũ | [Pipeline v1](docs/LEGACY_PIPELINE_V1.md) |
 
 Cấu hình thật nằm trong `.env` trên máy chạy. GitHub chứa cấu hình mẫu, dữ liệu tổng hợp và mã nguồn. Phiên làm việc, ảnh tải lên, MP4, bản xuất và biên nhận thật được lưu riêng.
+
+## Bản dùng chung và kiểm thử
+
+Clone nhánh `main` để có web, bộ đầu vào Notebook, tiện ích Gemini và Automation v2 trong cùng repo. Các phần tiếp tục dùng chung mã phiên, revision bundle và SHA-256 khi bàn giao. Không cần ghép file từ các nhánh cũ.
+
+Cần Node.js 20 trở lên để kiểm tra tiện ích và việc chuyển JSON qua n8n. Từ gốc repo:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-test.txt
+.\.venv\Scripts\python.exe scripts/verify.py
+```
+
+Lệnh chạy kiểm thử web, API v1/v2, Automation, Notebook và tiện ích bằng dữ liệu giả lập. GitHub Actions chạy cùng lệnh trên Windows và Linux. Lượt tạo video vẫn thực hiện trong Gemini; việc xuất bản TikTok cần thao tác của chủ tài khoản. Trợ lý chat đang ở giai đoạn thiết kế.

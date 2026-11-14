@@ -126,3 +126,39 @@ def markdown(bundle):
               "\n".join(pub["slogans"]), "```", "", "## Lưu ý", *["- " + w for w in bundle["qc"]["warnings"]],
               "", "Mang các prompt cảnh sang công cụ tạo video cùng ảnh nhân vật và ảnh sản phẩm. Chưa có video MP4 được tạo bởi ứng dụng này."]
     return "\n".join(lines)
+
+
+def notebook_markdown(bundle, plan, asset_names):
+    scenes = bundle["scenes"]
+    order = " → ".join(scene["id"] for scene in scenes)
+    voiceover = bundle["character"]["audio_mode"] == "voiceover"
+    audio = (
+        "Thuyết minh khi dựng. Tạo hình với tiếng môi trường nhẹ; phần lời đọc được thu riêng."
+        if voiceover else "Nhân vật nói trực tiếp bằng tiếng Việt theo nguyên văn trong prompt."
+    )
+    lines = [
+        "# Bộ cảnh đã duyệt cho Gemini Notebook",
+        "",
+        f"- Sản phẩm: {bundle['product']['name']}",
+        f"- Phiên bản đã duyệt: r{bundle['revision']}",
+        f"- Thứ tự cảnh: {order}",
+        f"- Khung dọc 9:16, mục tiêu {scenes[0]['duration_seconds']} giây mỗi cảnh.",
+        f"- Âm thanh: {audio}",
+        f"- Hai ảnh tham chiếu từ cùng ZIP: ảnh sản phẩm `{asset_names['product']}` và ảnh nhân vật `{asset_names['character']}`.",
+        "",
+        "Kịch bản đã chốt trong Content Studio. Dùng nguyên văn từng prompt và lời thoại đã duyệt.",
+        "Mỗi lượt chỉ tạo cảnh được yêu cầu. Giữ cùng cuộc trò chuyện và dùng lại hai ảnh khi cần tham chiếu.",
+        "Giữ nhân vật, trang phục và ánh sáng nhất quán. Nối tư thế cuối cảnh trước với tư thế đầu cảnh sau theo kế hoạch đã duyệt.",
+        "",
+    ]
+    offscreen = {scene["id"] for scene in plan["scenes"] if not scene["product_visible"]}
+    for scene in scenes:
+        scene_id = scene["id"]
+        lines.extend([f"## Cảnh {scene_id}", ""])
+        if scene_id in offscreen:
+            lines.extend(["Ảnh sản phẩm chỉ dùng để tham chiếu. Giữ sản phẩm ngoài khung hình ở cảnh này.", ""])
+        prompt = scene["prompt_en"]
+        longest_run = max(map(len, re.findall(r"`+", prompt)), default=0)
+        fence = "`" * max(3, longest_run + 1)
+        lines.extend([f"{fence}text", prompt, fence, ""])
+    return "\n".join(lines)

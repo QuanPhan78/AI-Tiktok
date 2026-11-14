@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import io
 import json
 import tempfile
@@ -48,6 +49,7 @@ class StudioV2Tests(unittest.TestCase):
         with patch("api.studio.get_store", return_value=self.store):
             client = TestClient(app)
             self.assertEqual(client.get(f"/api/v2/sessions/{self.sid}/export/json").status_code, 409)
+            self.assertEqual(client.get(f"/api/v2/sessions/{self.sid}/export/notebook").status_code, 409)
 
     def test_operation_id_and_revision_guard_before_ai(self):
         req = {"revision": 0, "operation_id": "same", "action": "generate", "data": {}}
@@ -201,19 +203,52 @@ class StudioV2Tests(unittest.TestCase):
                 with self.assertRaises(ValueError): HandoffV2.model_validate(b)
 
     def test_ui_and_export_include_exact_images_and_full_prompts(self):
-        done = complete(self.store, self.engine, self.s)
         from api.main import app
         with patch("api.studio.get_store", return_value=self.store):
             client = TestClient(app)
             self.assertEqual(client.get("/app").status_code, 200)
             self.assertEqual(client.get("/static/studio.js").status_code, 200)
-            archive = client.get(f"/api/v2/sessions/{self.sid}/export/zip")
-            self.assertEqual(archive.status_code, 200, archive.text if archive.status_code != 200 else "")
-            with zipfile.ZipFile(io.BytesIO(archive.content)) as z:
-                self.assertEqual(json.loads(z.read("handoff.json")), done["bundle"])
-                self.assertIn("product.png", z.namelist())
-                self.assertIn("character.png", z.namelist())
-                self.assertIn(done["bundle"]["scenes"][0]["prompt_en"], z.read("prompts.md").decode())
+            for count, mode in ((4, "speaking"), (5, "voiceover")):
+                with self.subTest(count=count, mode=mode):
+                    session = self.store.create(self.s["product"])
+                    bundle = complete(self.store, self.engine, session, count, mode)["bundle"]
+                    revision = bundle["revision"]
+                    exports = f"/api/v2/sessions/{session['id']}/export"
+                    archive = client.get(f"{exports}/zip", params={"revision": revision})
+                    self.assertEqual(archive.status_code, 200, archive.text if archive.status_code != 200 else "")
+                    notebook = client.get(f"{exports}/notebook", params={"revision": revision})
+                    self.assertEqual(notebook.status_code, 200)
+                    self.assertEqual(client.get(f"{exports}/notebook", params={"revision": revision + 1}).status_code, 409)
+
+                    with zipfile.ZipFile(io.BytesIO(archive.content)) as z:
+                        self.assertEqual(json.loads(z.read("handoff.json")), bundle)
+                        self.assertEqual(z.read("gemini-notebook.md"), notebook.content)
+                        references = {
+                            "product": bundle["product"]["images"][0],
+                            "character": bundle["character"]["image"],
+                        }
+                        for role, reference in references.items():
+                            filename = f"{role}.png"
+                            self.assertIn(filename, notebook.text)
+                            self.assertEqual(hashlib.sha256(z.read(filename)).hexdigest(), reference["sha256"])
+                        self.assertIn(bundle["scenes"][0]["prompt_en"], z.read("prompts.md").decode())
+
+                    parts = notebook.text.split("\n## Cảnh ")
+                    ids = [scene["id"] for scene in bundle["scenes"]]
+                    self.assertEqual([part.splitlines()[0] for part in parts[1:]], ids)
+                    self.assertIn(" → ".join(ids), parts[0])
+                    self.assertIn(f"r{revision}", parts[0])
+                    self.assertIn("Giữ sản phẩm ngoài khung hình", parts[1])
+                    self.assertNotIn("Giữ sản phẩm ngoài khung hình", parts[-1])
+                    for part, scene in zip(parts[1:], bundle["scenes"]):
+                        self.assertIn("\n" + scene["prompt_en"] + "\n", part)
+                        self.assertIn("Start:", scene["prompt_en"])
+                        self.assertIn("End:", scene["prompt_en"])
+                        if mode == "voiceover":
+                            self.assertNotIn(scene["dialogue_vi"], part)
+                    self.assertNotIn(bundle["product"]["price"], notebook.text)
+                    self.assertNotIn(bundle["publishing"]["pinned_comment"], notebook.text)
+                    self.assertNotIn(bundle["publishing"]["captions"][0], notebook.text)
 
     def test_upload_validation_and_api_async_revision(self):
         from api.main import app

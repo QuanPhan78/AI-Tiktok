@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, Response
 from PIL import Image
 from studio.ai import characters
 from studio.models import Action, Product, STEP_NAMES
-from studio.output import CHAR_DIR, character_asset, markdown, build_bundle
+from studio.output import CHAR_DIR, character_asset, markdown, notebook_markdown, build_bundle
 from studio.service import Studio
 from studio.store import Store, Conflict
 from studio.video import save_mp4
@@ -38,7 +38,7 @@ def lookup(sid):
 
 def public_session(s):
     s["step_name"] = STEP_NAMES[s["step"] - 1]
-    s["pending_action"] = "Xuất gói hoặc gửi sang Long" if s["step"] == 7 else f"Duyệt bước {s['step']}: {s['step_name']}"
+    s["pending_action"] = "Xem prompt, tạo và duyệt video" if s["step"] == 7 else f"Duyệt bước {s['step']}: {s['step_name']}"
     return s
 
 
@@ -187,16 +187,18 @@ def preview_video(sid: str, version: int):
 
 
 @router.get("/sessions/{sid}/export/{fmt}")
-def export_session(sid: str, fmt: str):
+def export_session(sid: str, fmt: str, revision: int | None = None):
     s = lookup(sid)
     if s["step"] != 7 or not s.get("bundle") or s["status"] == "processing":
         raise HTTPException(409, "Cần hoàn tất và duyệt bước 6 trước khi xuất.")
+    bundle = s["bundle"]
+    if revision is not None and revision != bundle["revision"]:
+        raise HTTPException(409, "Phiên bản đã duyệt đã thay đổi. Tải lại phiên để lấy bộ cảnh mới.")
     try:
-        if build_bundle(s, get_store(), s["bundle"]["revision"]) != s["bundle"]:
+        if build_bundle(s, get_store(), bundle["revision"]) != bundle:
             raise ValueError("Nội dung không trùng bản đã duyệt.")
     except Exception as exc:
         raise HTTPException(409, "Không thể xuất: " + str(exc))
-    bundle = s["bundle"]
     name = s["request_id"] + f"_r{bundle['revision']}"
     raw = json.dumps(bundle, ensure_ascii=False, indent=2).encode("utf-8")
     md = markdown(bundle).encode("utf-8")
@@ -204,16 +206,29 @@ def export_session(sid: str, fmt: str):
         content, media, ext = raw, "application/json", "json"
     elif fmt == "markdown":
         content, media, ext = md, "text/markdown; charset=utf-8", "md"
-    elif fmt == "zip":
-        buf = io.BytesIO()
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-            z.writestr("handoff.json", raw)
-            z.writestr("prompts.md", md)
-            assets = [("product", get_store().asset(s["product"]["asset_id"])),
-                      ("character", character_asset(s["approved"]["3"]["character"], get_store()))]
-            for role, meta in assets:
-                z.write(meta["path"], role + Path(meta["path"]).suffix)
-        content, media, ext = buf.getvalue(), "application/zip", "zip"
+    elif fmt in ("notebook", "zip"):
+        store = get_store()
+        assets = {
+            "product": store.asset(s["product"]["asset_id"]),
+            "character": character_asset(s["approved"]["3"]["character"], store),
+        }
+        asset_names = {role: role + Path(meta["path"]).suffix for role, meta in assets.items()}
+        notebook = notebook_markdown(bundle, s["approved"]["4"], asset_names).encode("utf-8")
+        if fmt == "notebook":
+            name += "_gemini-notebook"
+            content, media, ext = notebook, "text/markdown; charset=utf-8", "md"
+        else:
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+                z.writestr("handoff.json", raw)
+                z.writestr("prompts.md", md)
+                z.writestr("gemini-notebook.md", notebook)
+                for role, meta in assets.items():
+                    z.write(meta["path"], asset_names[role])
+            content, media, ext = buf.getvalue(), "application/zip", "zip"
     else:
         raise HTTPException(404, "Định dạng không hỗ trợ.")
-    return Response(content, media_type=media, headers={"Content-Disposition": f'attachment; filename="{name}.{ext}"'})
+    return Response(content, media_type=media, headers={
+        "Content-Disposition": f'attachment; filename="{name}.{ext}"',
+        "Cache-Control": "private, no-store",
+    })

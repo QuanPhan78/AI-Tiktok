@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Content Studio · Gemini",
+  "version": "1.0.0",
+  "description": "Điền prompt của cảnh đã duyệt vào ô soạn Gemini đang mở.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "worker.js"
+  },
+  "action": {
+    "default_title": "Content Studio · Gemini",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1:8001/app*"
+      ],
+      "js": [
+        "studio-bridge.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}

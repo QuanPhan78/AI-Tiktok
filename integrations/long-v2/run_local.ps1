@@ -26,6 +26,7 @@ python -c "import fastapi, uvicorn, notion_client, requests, pydantic, httpx" 2>
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[CANH BAO] Dang cai dat thu vien con thieu..." -ForegroundColor Yellow
     python -m pip install -r "python-service/requirements.txt"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
 Write-Host "[SUCCESS] Khoi dong FastAPI tai: http://127.0.0.1:8000" -ForegroundColor Green

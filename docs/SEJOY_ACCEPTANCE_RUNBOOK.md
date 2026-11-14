@@ -4,7 +4,7 @@ Ngày 11/11/2026, phiên SEJOY đã đi qua các mốc dưới đây trên môi 
 
 | Mốc | Kết quả đã ghi nhận |
 |---|---|
-| Nội dung đã chốt | Prompt revision 26, bốn cảnh, QC Gemini 9/10, ZIP đủ hai ảnh tham chiếu. |
+| Nội dung đã chốt | Prompt revision 26, bốn cảnh, điểm kiểm tra nội dung 9/10, ZIP đủ hai ảnh tham chiếu. |
 | Bàn giao Notion | Database thử có một bản `DRAFT`. Prompt đầy đủ và JSON đọc lại khớp biên nhận, kể cả sau khi restart. |
 | Video | Gemini trả bản nối bốn cảnh dọc 720 × 1280, dài 40,04 giây. MP4 v1 phát được tại Bước 7. |
 | Duyệt video | Bot v2 gửi đúng MP4 v1. Người duyệt bấm nút trong Telegram, Notion và Content Studio cùng hiện `APPROVED`. |
@@ -13,8 +13,8 @@ Ngày 11/11/2026, phiên SEJOY đã đi qua các mốc dưới đây trên môi 
 ## Chạy lại với một phiên thử
 
 1. Tạo phiên với ảnh và thông tin sản phẩm đã xác nhận. Duyệt đủ bảy bước theo [hướng dẫn sử dụng](HANDOFF_CONTENT_STUDIO_V2.md).
-2. Gửi bundle vào database Notion thử. Kiểm tra bản `DRAFT`, gửi lại cùng bundle và đối chiếu biên nhận. Giữ volume khi restart.
-3. Tạo MP4, gắn tại Bước 7 rồi gửi vào nhóm Telegram thử. Kiểm tra `PENDING_REVIEW`. Bấm **Duyệt video** hoặc **Cần sửa**, sau đó bấm **Đọc trạng thái duyệt** ở web.
+2. Bấm **Lưu nội dung vào Notion** để gửi bản prompt vào bảng Notion thử. Kiểm tra bản `DRAFT`, gửi lại cùng bundle và đối chiếu biên nhận. Giữ volume khi restart.
+3. Tạo MP4, bấm **Tải MP4 lên** tại Bước 7 rồi bấm **Gửi video để duyệt trên Telegram**. Kiểm tra `PENDING_REVIEW`. Bấm **Duyệt video** hoặc **Cần sửa**, sau đó bấm **Cập nhật trạng thái duyệt** ở web.
 4. Để thử nút cũ, dùng một phiên thử riêng. Gắn và gửi MP4 v2 có nội dung khác MP4 v1. Bấm nút ở tin nhắn v1 để xác nhận bị từ chối. Tiếp tục bấm nút của v2 và đối chiếu đúng quyết định trong Notion và web.
 
 ## Đối chiếu bản bàn giao
@@ -33,7 +33,7 @@ Từ gốc repo:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-test.txt
-.\.venv\Scripts\python.exe -m unittest tests.test_qc_results tests.test_studio_v2 tests.test_gateway_v2 tests.test_handoff_v2 tests.test_acceptance_tools tests.test_policy_validator tests.test_pipeline_kb_integration tests.test_webhook_integration tests.test_video_review_v2 -q
+.\.venv\Scripts\python.exe scripts/verify.py
 ```
 
-Bộ test dùng dữ liệu giả lập cho bước AI, nhận bundle, Notion, Telegram và các tình huống gửi trùng hoặc bấm nút duyệt bản cũ. Test live nằm riêng trong `tests/test_live_e2e_pipeline.py`.
+Bộ test cần Node.js 20 trở lên, dùng dữ liệu giả lập cho bước AI, nhận bundle, Notion, Telegram và các tình huống gửi trùng hoặc bấm nút duyệt bản cũ. Lệnh chung còn chạy 10 kiểm thử Automation và kiểm thử tiện ích Gemini. Không chạy các script `test_step6`–`test_step9` của Automation vì chúng cần hệ thống thật; không chạy thử AI thật tại `tests/test_live_e2e_pipeline.py`. [Bản hợp nhất và cập nhật source](REPOSITORY_SYNC.md).

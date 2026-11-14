@@ -95,10 +95,10 @@ def review_request(session, video, method):
             detail = body.get("detail") or (body.get("error") or {}).get("message")
             if isinstance(detail, str):
                 raise ValueError(detail)
-        raise ValueError(f"Automation chưa xác nhận yêu cầu duyệt video (HTTP {response.status_code}).")
+        raise ValueError(f"Hệ thống chưa xác nhận yêu cầu duyệt video trên Telegram (HTTP {response.status_code}).")
     result = response.json().get("data") or {}
     if result.get("request_id") != request_id or any(result.get(key) != value for key, value in fields.items()):
         raise ValueError("Biên nhận video không khớp phiên bản đã gửi.")
     if result.get("status") not in ("PENDING_REVIEW", "APPROVED", "NEEDS_REVISION"):
-        raise ValueError("Automation chưa xác nhận đã gửi video vào hàng duyệt.")
+        raise ValueError("Hệ thống chưa xác nhận đã gửi video để duyệt trên Telegram.")
     return result

@@ -54,6 +54,6 @@ def classify_quality(quality, fields):
                 warnings.append((field_label(field) + ": " if field in fields else "") + issue["message"])
             continue
         if field not in fields or not quote.strip() or quote not in fields[field]:
-            raise ValueError("QC chưa cung cấp trích đoạn khớp với trường/cảnh thực tế. Chưa thể chốt; hãy kiểm tra lại QC.")
+            raise ValueError("Kết quả kiểm tra nội dung cần có trích đoạn khớp với cảnh hoặc mục được báo lỗi. Hãy kiểm tra lại trước khi chốt.")
         blocking.append({**issue, "label": field_label(field)})
     return blocking, list(dict.fromkeys(warnings))
