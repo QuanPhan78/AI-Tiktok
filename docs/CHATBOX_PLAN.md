@@ -1,6 +1,6 @@
 # Kế hoạch trợ lý chat trong Content Studio
 
-Ngày 14/11/2026, người dùng chọn **trợ lý trong Content Studio**. Mục tiêu là hỏi đáp về phiên đang mở, giải thích việc cần làm, góp ý kịch bản và chuẩn bị sửa nội dung ngay trong web. Chức năng này chưa được triển khai trong bản hợp nhất.
+Ngày 14/11/2026, người dùng chọn **trợ lý trong Content Studio**. Mốc 1 đã được triển khai: hỏi đáp theo phiên, lịch sử riêng, căn cứ trả lời, Gemini có giới hạn lượt và chế độ hướng dẫn không gọi AI. Xem [hướng dẫn sử dụng](CHATBOX.md). Các mốc góp ý có so sánh và áp dụng bản nháp còn trong kế hoạch.
 
 ## Trải nghiệm cần đạt
 
@@ -57,7 +57,7 @@ Nếu mở rộng công cụ cho AI sau này, server chỉ cho danh sách thao t
 
 ## Yêu cầu chỉ dùng miễn phí
 
-Chat dùng API văn bản có cấu hình riêng (`CHAT_MODEL`, timeout, giới hạn lượt/ngày và lượng ngữ cảnh). Tận dụng client và cách báo lỗi hiện có nhưng không tự chuyển sang model khác khi hết hạn mức. Khi 429, lưu lịch sử và báo chờ; khi lỗi tạm thời, retry giới hạn và không tạo hai tác vụ cho cùng tin.
+Chat dùng API văn bản có cấu hình riêng (`CHAT_MODEL`, timeout, giới hạn lượt/ngày và lượng ngữ cảnh). Tận dụng client và cách báo lỗi hiện có nhưng không tự chuyển sang model khác khi hết hạn mức. Khi 429 hoặc lỗi tạm thời, lưu lịch sử và báo rõ; người dùng chọn gửi lượt mới, không tự gọi lại. Gửi lại yêu cầu trùng không tạo hai tác vụ cho cùng tin.
 
 Trước khi bật chat AI, xác nhận project/key đang dùng Free tier và model được cấp hạn mức miễn phí. Giới hạn trong ứng dụng chỉ giúp giảm số lượt gọi, không chứng minh tài khoản Google không bị tính phí. Nếu chưa xác minh được, để chat AI tắt và dùng phần hướng dẫn có sẵn. Không bật billing hay đăng ký gói thay người dùng. Gói dùng Gemini trên web không đồng nghĩa hạn mức API. [Bảng giá và Free tier của Gemini API](https://ai.google.dev/gemini-api/docs/pricing).
 

@@ -41,6 +41,7 @@ Mở [Content Studio ở cổng 8001](http://127.0.0.1:8001/app). Docker Desktop
 | Điền prompt vào chat Gemini trên Chrome/Edge | [Cài tiện ích Gemini](extensions/gemini/README.md) |
 | Theo dõi bản hợp nhất và cách cập nhật source | [Đồng bộ các nhánh](docs/REPOSITORY_SYNC.md) |
 | Kế hoạch trợ lý chat trong Content Studio | [Kế hoạch chatbox](docs/CHATBOX_PLAN.md) |
+| Hỏi đáp theo sản phẩm và bước đang làm | [Dùng trợ lý theo phiên](docs/CHATBOX.md) |
 | Xem ZIP và JSON mẫu | [Dữ liệu tổng hợp](examples/handoff-v2/README.md) |
 | Vận hành tích hợp cũ | [Pipeline v1](docs/LEGACY_PIPELINE_V1.md) |
 
@@ -57,4 +58,4 @@ Cần Node.js 20 trở lên để kiểm tra tiện ích và việc chuyển JSO
 .\.venv\Scripts\python.exe scripts/verify.py
 ```
 
-Lệnh chạy kiểm thử web, API v1/v2, Automation, Notebook và tiện ích bằng dữ liệu giả lập. GitHub Actions chạy cùng lệnh trên Windows và Linux. Lượt tạo video vẫn thực hiện trong Gemini; việc xuất bản TikTok cần thao tác của chủ tài khoản. Trợ lý chat đang ở giai đoạn thiết kế.
+Lệnh chạy kiểm thử web, API v1/v2, Automation, Notebook, tiện ích và trợ lý chat bằng dữ liệu giả lập. GitHub Actions chạy cùng lệnh trên Windows và Linux. Lượt tạo video vẫn thực hiện trong Gemini; việc xuất bản TikTok cần thao tác của chủ tài khoản. Trợ lý chat hiện hỗ trợ hỏi đáp theo phiên; áp dụng đề xuất sửa nội dung là mốc tiếp theo.

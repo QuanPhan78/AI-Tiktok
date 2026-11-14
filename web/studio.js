@@ -258,6 +258,7 @@ async function action(kind,data={}) {
   finally {busy=false;}
 }
 function render() {
+  window.ContentStudioChat?.setSession(session ? {id:session.id,revision:session.revision,step:session.step,status:session.status,productName:session.product.name,bundleRevision:session.bundle?.revision} : null);
   const stepKey = session ? session.id+':'+session.step : 'new';
   if (stepKey!==renderedStep) { window.scrollTo(0,0); renderedStep=stepKey; }
   $('#context').innerHTML=context(); $('#history').hidden=!session;

@@ -531,8 +531,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
 from api.studio import router as studio_router, get_store as studio_store
+from api.chat import router as chat_router
+from studio.chat import Chat
 
 app.include_router(studio_router)
+app.include_router(chat_router)
 _web = Path(__file__).resolve().parents[1] / "web"
 app.mount("/static", StaticFiles(directory=_web), name="studio-static")
 
@@ -545,3 +548,4 @@ def studio_page():
 @app.on_event("startup")
 def recover_studio_tasks():
     studio_store().recover()
+    Chat(studio_store()).recover()

@@ -36,6 +36,12 @@ Các action:
 
 Phiên có `step`, `revision`, `status`, `draft`, `approved`, `scene_cursor`, `dialogues`, `validation`, `validation_details`, `warnings`. Kết quả `quality` gồm điểm, phản hồi, lỗi có bằng chứng và lời nhắc riêng. Trạng thái gồm `awaiting_input`, `awaiting_approval`, `processing`, `needs_changes`, `ready`, `error`. Lỗi bàn giao không xóa bộ prompt.
 
+## Trợ lý hỏi đáp theo phiên
+
+`GET /api/v2/sessions/{id}/chat/messages?before={seq}` đọc tối đa 50 lượt và con trỏ `next_before`. `POST` cùng endpoint nhận `message_id` (UUID), `expected_revision`, `text` (1–2000 ký tự) và `mode` (`guide`/`gemini`), trả 202; đọc lại GET để theo dõi. Một phiên có một tác vụ chat đang chạy. Tin trùng có cùng body không chạy lại. Câu trả lời có revision, nguồn, cảnh báo và dấu `stale` nếu phiên đã thay đổi.
+
+Chat lưu trong bảng `chat_turns` cùng SQLite, không thay đổi bảng phiên/lịch sử duyệt. Khởi động lại đánh dấu tin đang chạy là gián đoạn. Chỉ dùng dữ liệu của phiên được hỏi, không gửi đường dẫn ảnh/video hoặc thông tin xác thực vào model. [Cấu hình và giới hạn miễn phí](CHATBOX.md).
+
 ## Automation v2
 
 | Endpoint | Mục đích |

@@ -1,9 +1,27 @@
 <!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Content Studio · TikTok AI</title><link rel="stylesheet" href="/static/studio.css"><script defer src="/static/studio.js"></script></head>
+<title>Content Studio · TikTok AI</title><link rel="stylesheet" href="/static/studio.css"><link rel="stylesheet" href="/static/chat.css"><script defer src="/static/chat.js"></script><script defer src="/static/studio.js"></script></head>
 <body><header><a class="brand" href="/app"><span class="brandmark">C</span><span>Content Studio<small>AI CONTENT & TIKTOK AUTOMATION</small></span></a><span class="local"><i></i> Làm việc trên máy này</span></header>
 <div class="layout"><aside class="sidebar"><button id="new-session" class="primary wide">＋ Tạo nội dung mới</button><div class="section-label">PHIÊN LÀM VIỆC</div><nav id="sessions" aria-label="Danh sách phiên"></nav></aside>
 <main><div id="notice" role="alert" hidden></div><div class="page-head"><div><div class="eyebrow">KHÔNG GIAN SÁNG TẠO</div><h1 id="page-title">Từ sản phẩm đến câu chuyện</h1><p id="subtitle">Bảy bước để chuẩn bị một bộ prompt nhất quán, sẵn sàng bàn giao.</p></div><button id="history" class="quiet" hidden>Lịch sử duyệt ↗</button></div>
 <ol id="steps" class="steps" aria-label="Quy trình bảy bước"></ol><div class="workspace"><section id="editor" class="editor"></section><aside id="context" class="context"></aside></div></main></div>
 <div id="toast" role="status" hidden></div><dialog id="history-dialog"><div class="dialog-head"><h2>Lịch sử phiên</h2><button id="close-history" class="quiet">Đóng</button></div><div id="history-body"></div></dialog>
-<footer>Content Studio / Bản làm việc có người duyệt <span>Prompt được xuất sau khi bạn chốt nội dung.</span></footer></body></html>
+<footer>Content Studio / Bản làm việc có người duyệt <span>Prompt được xuất sau khi bạn chốt nội dung.</span></footer>
+<button id="chat-launcher" class="primary" aria-controls="chat-panel" aria-expanded="false">Trợ lý ✦</button>
+<section id="chat-panel" aria-label="Trợ lý Content Studio" hidden>
+  <div class="chat-head"><div><h2>Trợ lý theo phiên</h2><button id="chat-close" class="quiet" aria-label="Đóng trợ lý">Đóng</button></div><p id="chat-context">Mở hoặc tạo một phiên để bắt đầu.</p></div>
+  <button id="chat-older" class="quiet" hidden>Xem tin cũ hơn</button>
+  <div id="chat-messages" role="log" aria-live="polite" aria-label="Lịch sử trò chuyện"></div>
+  <div class="chat-tools" aria-label="Câu hỏi gợi ý">
+    <button data-chat-question="Tôi cần làm gì tiếp?">Bước tiếp theo</button>
+    <button data-chat-question="Giải thích lỗi kiểm tra nội dung hiện tại">Giải thích lỗi</button>
+    <button data-chat-question="Cần đưa gì sang Gemini?">Chuẩn bị Gemini</button>
+    <button data-chat-question="Video đã được duyệt chưa?">Trạng thái video</button>
+  </div>
+  <form id="chat-form">
+    <label for="chat-mode">Cách trả lời</label><select id="chat-mode"><option value="guide">Hướng dẫn có sẵn · không gọi AI</option><option id="chat-mode-ai" value="gemini" disabled>Trao đổi với Gemini</option></select>
+    <p id="chat-config"></p><p id="chat-error" role="alert" hidden></p>
+    <label for="chat-input">Câu hỏi của bạn</label><textarea id="chat-input" maxlength="2000" placeholder="Hỏi về phiên đang mở…" disabled></textarea>
+    <div class="chat-submit"><button id="chat-refresh" type="button" class="quiet">Cập nhật chat</button><button id="chat-send" type="submit" class="primary" disabled>Gửi câu hỏi →</button></div>
+  </form>
+</section></body></html>

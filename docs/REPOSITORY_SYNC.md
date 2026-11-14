@@ -40,4 +40,4 @@ Pipeline v1 vẫn dùng endpoint/workflow riêng để tương thích. Workflow 
 
 ## Việc tiếp theo
 
-[Trợ lý chat ngay trong Content Studio](CHATBOX_PLAN.md) sẽ dùng trạng thái phiên và quy trình duyệt hiện có. Đây là kế hoạch phát triển tiếp theo; bản hợp nhất chưa có hộp chat.
+[Trợ lý chat ngay trong Content Studio](CHATBOX.md) đã có hỏi đáp và lịch sử theo phiên. [Mốc tiếp theo](CHATBOX_PLAN.md) bổ sung đề xuất có so sánh và áp dụng thành bản nháp qua quy trình duyệt hiện có.

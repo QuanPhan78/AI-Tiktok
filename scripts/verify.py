@@ -21,6 +21,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="verify-", dir=folder) as temp:
         env = dict(os.environ, PYTHONUTF8="1", PYTHON_DOTENV_DISABLED="1",
                    PYTEST_DISABLE_PLUGIN_AUTOLOAD="1", ENABLE_NGROK="0",
+                   CHAT_AI_ENABLED="0", CHAT_FREE_TIER_FINGERPRINT="",
                    LANGCHAIN_TRACING_V2="false", LANGSMITH_TRACING="false",
                    ENABLE_TIKTOK_SANDBOX_SIMULATION="false", CONTENT_V2_ACCEPTANCE_MODE="0",
                    STUDIO_DATA_DIR=str(Path(temp) / "studio"), HANDOFF_DATA_DIR=str(Path(temp) / "automation"),
@@ -36,7 +37,7 @@ def main():
         commands = [
             ("Content Studio, contracts, packaged files and v1/v2", [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-q"]),
             ("Automation regression checks", [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "integrations/long-v2/tests/test_fixes.py"]),
-            ("Gemini extension", [node, "--test", "tests/gemini_extension.test.mjs"]),
+            ("Gemini extension and chat", [node, "--test", "tests/gemini_extension.test.mjs", "tests/chat.test.mjs"]),
         ]
         for label, command in commands:
             print(f"Checking {label}...", flush=True)
