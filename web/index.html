@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Content Studio · TikTok AI</title><link rel="stylesheet" href="/static/studio.css"><link rel="stylesheet" href="/static/chat.css"><script defer src="/static/chat.js"></script><script defer src="/static/studio.js"></script></head>
+<title>Content Studio · TikTok AI</title><link rel="stylesheet" href="/static/studio.css"><link rel="stylesheet" href="/static/chat.css"><link rel="stylesheet" href="/static/publishing.css"><script defer src="/static/auth.js"></script><script defer src="/static/publishing.js"></script><script defer src="/static/chat.js"></script><script defer src="/static/studio.js"></script></head>
 <body><header><a class="brand" href="/app"><span class="brandmark">C</span><span>Content Studio<small>AI CONTENT & TIKTOK AUTOMATION</small></span></a><span class="local"><i></i> Làm việc trên máy này</span></header>
-<div class="layout"><aside class="sidebar"><button id="new-session" class="primary wide">＋ Tạo nội dung mới</button><div class="section-label">PHIÊN LÀM VIỆC</div><nav id="sessions" aria-label="Danh sách phiên"></nav></aside>
+<div class="layout"><aside class="sidebar"><div id="account-tools"></div><button id="show-publications" class="wide">Lịch đăng và TikTok</button><button id="new-session" class="primary wide">＋ Tạo nội dung mới</button><div class="section-label">PHIÊN LÀM VIỆC</div><nav id="sessions" aria-label="Danh sách phiên"></nav></aside>
 <main><div id="notice" role="alert" hidden></div><div class="page-head"><div><div class="eyebrow">KHÔNG GIAN SÁNG TẠO</div><h1 id="page-title">Từ sản phẩm đến câu chuyện</h1><p id="subtitle">Bảy bước để chuẩn bị một bộ prompt nhất quán, sẵn sàng bàn giao.</p></div><button id="history" class="quiet" hidden>Lịch sử duyệt ↗</button></div>
 <ol id="steps" class="steps" aria-label="Quy trình bảy bước"></ol><div class="workspace"><section id="editor" class="editor"></section><aside id="context" class="context"></aside></div></main></div>
 <div id="toast" role="status" hidden></div><dialog id="history-dialog"><div class="dialog-head"><h2>Lịch sử phiên</h2><button id="close-history" class="quiet">Đóng</button></div><div id="history-body"></div></dialog>
@@ -24,4 +24,4 @@
     <label for="chat-input">Câu hỏi của bạn</label><textarea id="chat-input" maxlength="2000" placeholder="Hỏi về phiên đang mở…" disabled></textarea>
     <div class="chat-submit"><button id="chat-refresh" type="button" class="quiet">Cập nhật chat</button><button id="chat-send" type="submit" class="primary" disabled>Gửi câu hỏi →</button></div>
   </form>
-</section></body></html>
+</section><dialog id="publishing-dialog" aria-label="Đăng TikTok và lịch đăng"><div class="dialog-head"><h2>Đăng TikTok</h2><button id="publishing-close" class="quiet">Đóng</button></div><p id="publishing-message" role="status"></p><div id="publishing-content"></div></dialog></body></html>

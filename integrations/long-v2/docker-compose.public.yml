@@ -1,0 +1,38 @@
+# Compose with docker-compose.yml; exposes only the public web gateway.
+services:
+  studio:
+    build:
+      context: ../..
+    ports:
+      - "127.0.0.1:8001:8001"
+    environment:
+      - STUDIO_AUTH_ENABLED=1
+      - STUDIO_BOOTSTRAP_LOCAL_PROXY=1
+      - STUDIO_PUBLIC_MODE=1
+      - STUDIO_PUBLIC_URL=${STUDIO_PUBLIC_URL:-}
+      - STUDIO_SUPPORT_CONTACT=${STUDIO_SUPPORT_CONTACT:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.1-flash-lite}
+      - GEMINI_FALLBACK_MODEL=${GEMINI_FALLBACK_MODEL:-}
+      - CHAT_AI_ENABLED=0
+      - STUDIO_DATA_DIR=/data
+      - VIDEO_REVIEW_API_URL=http://python-service:8000
+      - WEBHOOK_V2_URL=http://n8n:5678/webhook/ai-agent-callback-v2
+      - WEBHOOK_V2_TOKEN=${WEBHOOK_V2_TOKEN:?Set shared server token}
+    volumes:
+      - ${STUDIO_DATA_HOST:-../../data}:/data
+    restart: unless-stopped
+    depends_on:
+      - python-service
+  studio-public-gateway:
+    image: nginx:stable-alpine
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./config/studio-public.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./verification:/verification:ro
+    depends_on:
+      - studio
+      - python-service
+      - n8n
+    restart: unless-stopped

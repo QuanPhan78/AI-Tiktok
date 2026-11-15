@@ -161,3 +161,7 @@ Invoke-BotApi getWebhookInfo |
 Tại Bước 7, bấm **Lưu nội dung vào Notion** để có biên nhận prompt. Bấm **Tải MP4 lên** để tải và xem trước tệp tối đa 45 MB, rồi bấm **Gửi video để duyệt trên Telegram**. Khi Telegram nhận clip, Notion chuyển sang `PENDING_REVIEW`. Chọn **Duyệt video** hoặc **Cần sửa** trong nhóm rồi bấm **Cập nhật trạng thái duyệt** ở web để đồng bộ.
 
 Khi gửi phiên bản MP4 thay thế, nút trong tin nhắn cũ hết hiệu lực. Phiên bản mới cần quyết định riêng. Kiểm thử v2 với database thử. Workflow lập lịch và đăng v1 phục vụ database v1. [Bàn giao đăng TikTok](../../docs/HANDOFF_CONTENT_STUDIO_V2.md#6-bàn-giao-để-đăng-tiktok).
+
+## Lịch đăng và TikTok đa tài khoản v2
+
+Xem [hướng dẫn triển khai, OAuth, lịch và nghiệm thu](../../docs/TIKTOK_PUBLISHING_V2.md). Workflow mới dùng database riêng theo tài khoản; không trộn lịch v1 vào dữ liệu v2. Phần đăng thật còn chờ ứng dụng TikTok Developer và quyền video.publish.

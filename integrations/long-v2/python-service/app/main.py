@@ -37,6 +37,9 @@ app = FastAPI(
 # Đăng ký router Content Studio v2
 app.include_router(handoff_v2.router)
 app.include_router(video_review_v2.router)
+from app import publishing_v2
+app.include_router(publishing_v2.router)
+app.include_router(publishing_v2.media_router)
 
 # ===== Models =====
 class HealthResponse(BaseModel):

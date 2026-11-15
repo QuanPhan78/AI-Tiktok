@@ -8,3 +8,5 @@ python-dotenv
 pydantic>=2
 python-multipart
 Pillow
+pwdlib[argon2]>=0.3,<1
+cryptography>=44

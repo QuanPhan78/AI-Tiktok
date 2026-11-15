@@ -40,3 +40,9 @@ jobs:
         if: runner.os == 'Linux'
         run: docker compose --env-file .env.example -f docker-compose.yml -f docker-compose.acceptance.yml config --quiet
         working-directory: integrations/long-v2
+      - name: Validate public gateway stack
+        if: runner.os == 'Linux'
+        run: docker compose --env-file .env.example -f docker-compose.yml -f docker-compose.public.yml config --quiet
+        working-directory: integrations/long-v2
+        env:
+          WEBHOOK_V2_TOKEN: ci-placeholder-only

@@ -134,7 +134,7 @@ class TikTokPublisher:
             )
         except TikTokApiException as e:
             err_msg = str(e)
-            if "unaudited_client" in err_msg or "url_ownership_unverified" in err_msg:
+            if self.enable_sandbox_simulation and ("unaudited_client" in err_msg or "url_ownership_unverified" in err_msg):
                 logger.warning(f"TikTok Sandbox constraint: {err_msg}. Using sandbox test publish_id.")
                 publish_id = f"v_pub_sandbox_file_{int(datetime.now(timezone.utc).timestamp())}"
             else:

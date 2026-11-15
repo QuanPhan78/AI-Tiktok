@@ -22,6 +22,8 @@ def main():
         env = dict(os.environ, PYTHONUTF8="1", PYTHON_DOTENV_DISABLED="1",
                    PYTEST_DISABLE_PLUGIN_AUTOLOAD="1", ENABLE_NGROK="0",
                    CHAT_AI_ENABLED="0", CHAT_FREE_TIER_FINGERPRINT="",
+                   STUDIO_AUTH_ENABLED="0", STUDIO_PUBLIC_MODE="0", TIKTOK_SCHEDULER_ENABLED="0",
+                   STUDIO_PUBLIC_URL="", TIKTOK_TOKEN_ENCRYPTION_KEY="", TIKTOK_V2_REDIRECT_URI="",
                    LANGCHAIN_TRACING_V2="false", LANGSMITH_TRACING="false",
                    ENABLE_TIKTOK_SANDBOX_SIMULATION="false", CONTENT_V2_ACCEPTANCE_MODE="0",
                    STUDIO_DATA_DIR=str(Path(temp) / "studio"), HANDOFF_DATA_DIR=str(Path(temp) / "automation"),
@@ -37,7 +39,7 @@ def main():
         commands = [
             ("Content Studio, contracts, packaged files and v1/v2", [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-q"]),
             ("Automation regression checks", [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "integrations/long-v2/tests/test_fixes.py"]),
-            ("Gemini extension and chat", [node, "--test", "tests/gemini_extension.test.mjs", "tests/chat.test.mjs"]),
+            ("Gemini extension, chat and publishing", [node, "--test", "tests/gemini_extension.test.mjs", "tests/chat.test.mjs", "tests/publishing.test.mjs"]),
         ]
         for label, command in commands:
             print(f"Checking {label}...", flush=True)

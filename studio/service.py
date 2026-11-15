@@ -252,7 +252,7 @@ class Studio:
             raise ValueError("Đầu ra thay đổi; cần quay lại duyệt tổng hợp.")
         url = os.getenv("WEBHOOK_V2_URL", "http://127.0.0.1:5678/webhook/ai-agent-callback-v2")
         parsed = urlsplit(url)
-        local = parsed.hostname in ("localhost", "127.0.0.1", "::1")
+        local = parsed.hostname in ("localhost", "127.0.0.1", "::1", "n8n")
         token = os.getenv("WEBHOOK_V2_TOKEN", "").strip()
         if parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.scheme not in ("http", "https") or not parsed.hostname:
             raise ValueError("WEBHOOK_V2_URL không hợp lệ; không đặt token trong URL.")

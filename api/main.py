@@ -29,6 +29,7 @@ else:
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from studio.auth import middleware as account_middleware, router as account_router
 from pydantic import BaseModel
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -47,10 +48,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:8001", "http://localhost:8001"],
+    allow_origins=["http://127.0.0.1:8001", "http://localhost:8001"] + ([os.environ['STUDIO_PUBLIC_URL'].rstrip('/')] if os.getenv('STUDIO_PUBLIC_URL') else []),
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.middleware('http')(account_middleware)
+app.include_router(account_router)
 
 # Luu log cac request da chay (trong RAM, du dung de test)
 _request_log: dict = {}
@@ -536,6 +539,8 @@ from studio.chat import Chat
 
 app.include_router(studio_router)
 app.include_router(chat_router)
+from api.publications import router as publications_router
+app.include_router(publications_router)
 _web = Path(__file__).resolve().parents[1] / "web"
 app.mount("/static", StaticFiles(directory=_web), name="studio-static")
 
@@ -543,6 +548,21 @@ app.mount("/static", StaticFiles(directory=_web), name="studio-static")
 @app.get("/app", include_in_schema=False)
 def studio_page():
     return FileResponse(_web / "index.html")
+
+
+@app.get('/login', include_in_schema=False)
+def login_page():
+    return FileResponse(_web / 'login.html')
+
+
+@app.get('/policy', include_in_schema=False)
+def policy_page():
+    return FileResponse(_web / 'policy.html')
+
+
+@app.get('/account', include_in_schema=False)
+def account_page():
+    return FileResponse(_web / 'account.html')
 
 
 @app.on_event("startup")

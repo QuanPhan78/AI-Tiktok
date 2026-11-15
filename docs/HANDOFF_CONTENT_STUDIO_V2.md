@@ -90,3 +90,7 @@ Tại Bước 7, trong mục **Tải video lên và duyệt**, bấm **Lưu nộ
 | Notion lỗi 502 hoặc 503 | Kiểm tra quyền integration và database thử. Nếu service đã ghi một phần, gửi lại nguyên bundle để tiếp tục. |
 | Telegram chưa có video | Kiểm tra biên nhận prompt, MP4 hợp lệ, bot trong nhóm và biến cấu hình Automation. |
 | Bấm nút Telegram mà trạng thái chưa đổi | Kiểm tra webhook HTTPS còn chạy và tài khoản có quyền. Bấm **Cập nhật trạng thái duyệt** ở Content Studio. |
+
+## Lập lịch trực tiếp trong Content Studio
+
+Bản mới có tài khoản web, duyệt video trên web, kết nối TikTok và lịch v2. Xem [hướng dẫn lập lịch và đăng TikTok](TIKTOK_PUBLISHING_V2.md). Các bước đăng thủ công ở trên vẫn dùng được khi chưa có quyền API; chưa có bằng chứng đăng thật từ luồng v2.

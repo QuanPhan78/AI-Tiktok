@@ -75,7 +75,7 @@ def review_request(session, video, method):
     base = os.getenv("VIDEO_REVIEW_API_URL", "http://127.0.0.1:8000").rstrip("/")
     url = urlsplit(base)
     token = os.getenv("WEBHOOK_V2_TOKEN", "").strip()
-    loopback = url.hostname in ("127.0.0.1", "localhost", "::1")
+    loopback = url.hostname in ("127.0.0.1", "localhost", "::1", "python-service")
     if (not token or not url.hostname or url.username or url.password or url.query or url.fragment or
             not (url.scheme == "https" or (loopback and url.scheme == "http"))):
         raise ValueError("Cần cấu hình VIDEO_REVIEW_API_URL và WEBHOOK_V2_TOKEN để gửi duyệt video.")

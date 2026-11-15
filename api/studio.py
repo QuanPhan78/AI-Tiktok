@@ -15,6 +15,7 @@ from studio.output import CHAR_DIR, character_asset, markdown, notebook_markdown
 from studio.service import Studio
 from studio.store import Store, Conflict
 from studio.video import save_mp4
+from studio import auth
 
 router = APIRouter(prefix="/api/v2", tags=["Content Studio"])
 workers = ThreadPoolExecutor(max_workers=2, thread_name_prefix="studio")
@@ -90,6 +91,7 @@ async def upload_asset(file: UploadFile = File(...)):
     meta = {"id": aid, "filename": Path((file.filename or "image").replace("\\", "/")).name[:150],
             "path": str(path.resolve()), "size": len(content), "sha256": hashlib.sha256(content).hexdigest(), "media_type": kind[1]}
     get_store().save_asset(meta)
+    auth.own('asset', aid, get_store())
     return {k: v for k, v in meta.items() if k != "path"}
 
 
@@ -105,16 +107,24 @@ def asset_file(aid: str):
 @router.post("/sessions", status_code=201)
 def create_session(product: Product):
     if product.asset_id:
+        auth.require_owner('asset', product.asset_id, get_store())
         try:
             get_store().asset(product.asset_id)
         except KeyError:
             raise HTTPException(400, "Ảnh sản phẩm không tồn tại.")
-    return public_session(get_store().create(product.model_dump()))
+    s = get_store().create(product.model_dump())
+    auth.own('session', s['id'], get_store())
+    return public_session(s)
 
 
 @router.get("/sessions")
 def list_sessions():
-    return [{k: s[k] for k in ("id", "request_id", "revision", "step", "status", "product", "updated_at")} for s in get_store().list()]
+    if auth.enabled():
+        with auth.init(get_store()).db() as db:
+            rows = [json.loads(r[0]) for r in db.execute("SELECT body FROM sessions JOIN ownership ON resource=sessions.id AND kind='session' WHERE owner=? ORDER BY updated DESC LIMIT 200", (auth.current()['id'],))]
+    else:
+        rows = get_store().list()
+    return [{k: s[k] for k in ("id", "request_id", "revision", "step", "status", "product", "updated_at")} for s in rows]
 
 
 @router.get("/sessions/{sid}")
@@ -134,6 +144,15 @@ def session_history(sid: str):
 @router.post("/sessions/{sid}/actions", status_code=202)
 def session_action(sid: str, action: Action):
     req = action.model_dump()
+    if action.action in ('handoff','submit_video_review','refresh_video_review') and auth.current()['role']!='admin':
+        raise HTTPException(403,'Dùng duyệt video trên web. Kết nối Notion/Telegram SEJOY dành riêng cho quản trị.')
+    for value in (action.data.get('product'),action.data.get('new_character')):
+        if isinstance(value,dict) and value.get('asset_id'):
+            auth.require_owner('asset',value['asset_id'],get_store())
+    if action.action in ('reopen','revise'):
+        if lookup(sid)['revision'] != action.revision: raise HTTPException(409,'Phiên đã thay đổi.')
+        from api.publications import guard_edit
+        guard_edit(sid,get_store())
     try:
         before, claimed = get_store().claim(sid, req)
     except KeyError:
@@ -150,7 +169,7 @@ def session_action(sid: str, action: Action):
 
 @router.post("/sessions/{sid}/videos", status_code=201)
 def upload_video(sid: str, revision: int = Form(...), file: UploadFile = File(...)):
-    lookup(sid)
+    if lookup(sid)['revision'] != revision: raise HTTPException(409,'Phiên đã thay đổi.')
     store = get_store()
     meta = {"id": uuid.uuid4().hex,
             "filename": Path((file.filename or "video.mp4").replace("\\", "/")).name[:150]}
@@ -159,6 +178,10 @@ def upload_video(sid: str, revision: int = Form(...), file: UploadFile = File(..
     kept = False
     try:
         meta.update(save_mp4(file.file, path))
+        current = store.get(sid).get('video') or {}
+        if current.get('sha256') != meta['sha256']:
+            from api.publications import guard_edit
+            guard_edit(sid,store)
         session, kept = store.attach_video(sid, revision, meta)
         return public_session(session)
     except ValueError as exc:

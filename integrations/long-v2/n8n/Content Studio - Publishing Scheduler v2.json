@@ -1,0 +1,10 @@
+{
+  "name": "Content Studio - Publishing Scheduler v2",
+  "nodes": [
+    {"parameters":{"rule":{"interval":[{"field":"minutes","minutesInterval":1}]}},"id":"tick-clock","name":"Every minute","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1.2,"position":[0,0]},
+    {"parameters":{"method":"POST","url":"http://python-service:8000/api/v2/publishing/tick","authentication":"genericCredentialType","genericAuthType":"httpHeaderAuth","options":{"timeout":300000}},"id":"tick-request","name":"Process owned schedules","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[250,0]}
+  ],
+  "connections":{"Every minute":{"main":[[{"node":"Process owned schedules","type":"main","index":0}]]}},
+  "active":false,
+  "settings":{"executionOrder":"v1","timezone":"Asia/Ho_Chi_Minh","saveDataSuccessExecution":"none","saveDataErrorExecution":"none","saveManualExecutions":false,"saveExecutionProgress":false}
+}

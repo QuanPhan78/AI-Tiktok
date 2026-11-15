@@ -2,6 +2,8 @@
 
 Content Studio giúp nhóm duyệt nội dung TikTok qua 7 bước, tạo gói prompt và ảnh tham chiếu, bàn giao nội dung vào Notion, rồi gửi đúng phiên bản MP4 để duyệt qua Telegram.
 
+**Mới: [tài khoản web, duyệt MP4, kết nối TikTok và lập lịch](docs/TIKTOK_PUBLISHING_V2.md).** Mỗi người có dữ liệu riêng. Có thể duyệt trên web, chọn tài khoản TikTok và đặt giờ Việt Nam. Phần đăng thật cần ứng dụng TikTok Developer có quyền `video.publish`; hiện chưa có bằng chứng nghiệm thu đăng thật. Dữ liệu SEJOY và luồng Telegram hiện có được giữ nguyên.
+
 **Bắt đầu từ [hướng dẫn sử dụng và bàn giao](docs/HANDOFF_CONTENT_STUDIO_V2.md).** Bài hướng dẫn có các bước chạy web, tạo clip, cấu hình Notion và Telegram, lấy caption, hashtag và bàn giao bản đã duyệt để đăng.
 
 ```mermaid
@@ -15,7 +17,8 @@ flowchart LR
     M --> T["Telegram · duyệt đúng MP4"]
     D --> T
     T --> A["Notion và Content Studio · APPROVED"]
-    A --> P["Đăng hoặc lên lịch trên TikTok"]
+    A --> P["Xác nhận tài khoản · nội dung · giờ đăng"]
+    P --> Q["Lịch v2 · TikTok Direct Post khi đủ quyền"]
 ```
 
 ## Chạy web trên Windows
@@ -58,4 +61,4 @@ Cần Node.js 20 trở lên để kiểm tra tiện ích và việc chuyển JSO
 .\.venv\Scripts\python.exe scripts/verify.py
 ```
 
-Lệnh chạy kiểm thử web, API v1/v2, Automation, Notebook, tiện ích và trợ lý chat bằng dữ liệu giả lập. GitHub Actions chạy cùng lệnh trên Windows và Linux. Lượt tạo video vẫn thực hiện trong Gemini; việc xuất bản TikTok cần thao tác của chủ tài khoản. Trợ lý chat hiện hỗ trợ hỏi đáp theo phiên; áp dụng đề xuất sửa nội dung là mốc tiếp theo.
+Lệnh chạy kiểm thử web, API v1/v2, Automation, Notebook, tiện ích, trợ lý chat, tài khoản và lịch đăng bằng dữ liệu giả lập. GitHub Actions chạy cùng lệnh trên Windows và Linux. Lượt tạo video vẫn thực hiện trong Gemini. Chủ tài khoản xem và duyệt MP4, cấp quyền TikTok rồi xác nhận từng lượt đăng/lịch. Trợ lý chat hiện hỗ trợ hỏi đáp theo phiên; áp dụng đề xuất sửa nội dung là mốc tiếp theo.

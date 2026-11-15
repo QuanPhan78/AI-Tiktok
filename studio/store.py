@@ -128,7 +128,14 @@ class Store:
             row = db.execute("SELECT body FROM assets WHERE id=?", (aid,)).fetchone()
         if not row:
             raise KeyError(aid)
-        return json.loads(row[0])
+        value = json.loads(row[0])
+        # Existing Windows uploads remain usable when the same data folder is mounted in Docker.
+        if not Path(value['path']).is_file():
+            name = value['path'].replace('\\', '/').rsplit('/', 1)[-1]
+            relocated = self.path.parent / 'assets' / name
+            if Path(name).stem == aid and relocated.is_file():
+                value['path'] = str(relocated)
+        return value
 
     def save_asset(self, meta):
         with self.db() as db:

@@ -176,7 +176,7 @@ function videoPanel(s) {
     <button id="attach-video">${video ? 'Tải bản thay thế lên' : 'Tải MP4 lên'}</button>
     ${video ? `<video controls playsinline preload="metadata" src="/api/v2/sessions/${s.id}/videos/${video.version}" aria-label="Xem trước video"></video>
     <p>${esc(video.filename)} · MP4 v${video.version} · ${esc(videoStates[video.status])}</p>` : ''}
-    <div class="video-review-actions">
+    <div class="video-review-actions" ${window.StudioAuth?.user?.role==='user'?'hidden':''}>
       ${savedToNotion
         ? `<p class="notion-saved" role="status">Đã lưu nội dung r${revision} vào Notion</p>`
         : `<button id="handoff">Lưu nội dung vào Notion</button>
@@ -305,7 +305,7 @@ function render() {
   }
   if(step===6)html+=qcReport(s);
   if(step<7){html+=`<div class="question">${['Thông tin sản phẩm này đã đúng chưa?','Bạn chọn tình huống nào?','Bạn có đồng ý nhân vật và giọng nói này không?','Bạn có đồng ý kế hoạch các cảnh này không?','Bạn đã chốt lời thoại cảnh này chưa?','Bạn có chốt phương án cuối cùng này không?'][step-1]}</div><div class="actions"><button id="generate">${d?'Tạo lại bản nháp':'Tạo bản nháp'}</button>${d?`<button id="approve" class="primary">${step===6?'Chốt và xuất prompt →':step===5?'Chốt cảnh này →':'Đồng ý và tiếp tục →'}</button>`:''}</div>`;}
-  else html+=videoPanel(s);
+  else html+=videoPanel(s)+`<section class="scene"><h3>Đăng TikTok</h3><p>Xem và duyệt đúng MP4, chọn tài khoản rồi xác nhận đăng ngay hoặc đặt lịch. Giờ chọn là lúc bắt đầu gửi video.</p><button class="primary" data-publication-session="${s.id}" ${s.video?'':'disabled'}>Duyệt và chuẩn bị đăng TikTok</button></section>`;
   if(s.status==='processing')html+='<p class="busy"><span class="spinner"></span> Đang xử lý nội dung. Bạn có thể đóng trang và quay lại.</p>';
   editor.innerHTML=html;
   if($('#dialogue-count'))showDialogueCount($('#dialogue'));
@@ -349,4 +349,4 @@ document.addEventListener('click',async e=>{
   }catch(err){notice(err.message);revealOutcome();}
 });
 document.addEventListener('submit',async e=>{if(e.target.id!=='create-form')return;e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;notice();try{const asset_id=await upload($('#product-image'));session=await api('/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:val('product-name'),uses:val('product-uses'),price:val('product-price'),product_link:val('product-link'),asset_id})});localStorage.setItem('studio-session',session.id);render();await refreshList();}catch(err){notice(err.message);b.disabled=false;}});
-(async()=>{try{library=await api('/characters');render();await refreshList();const last=localStorage.getItem('studio-session');if(last){try{await openSession(last);}catch{localStorage.removeItem('studio-session');}}}catch(e){notice(e.message);}})();
+(async()=>{try{if(window.StudioAuth && !await window.StudioAuth.ready)return;library=await api('/characters');render();await refreshList();const last=localStorage.getItem('studio-session');if(last){try{await openSession(last);}catch{localStorage.removeItem('studio-session');}}}catch(e){notice(e.message);}})();

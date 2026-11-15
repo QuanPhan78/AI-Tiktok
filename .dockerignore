@@ -1,0 +1,10 @@
+.git
+.env*
+.venv
+data
+**/data
+**/__pycache__
+**/*.mp4
+**/*.sqlite3*
+**/.env
+**/logs
