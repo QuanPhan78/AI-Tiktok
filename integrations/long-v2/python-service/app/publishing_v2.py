@@ -17,6 +17,7 @@ from app import publication_store as ps
 from app import handoff_v2 as handoff
 from app.video_review_v2 import require_studio, save_upload
 from app.tiktok_v2 import TikTokV2, TikTokError
+from app.publishing_setup import configuration
 
 router = APIRouter(prefix='/api/v2/publishing', dependencies=[Depends(require_studio)])
 media_router = APIRouter()
@@ -24,18 +25,12 @@ client = TikTokV2()
 
 
 def readiness():
-    missing = [name for name in ('TIKTOK_CLIENT_KEY','TIKTOK_CLIENT_SECRET','TIKTOK_V2_REDIRECT_URI',
-                                 'TIKTOK_TOKEN_ENCRYPTION_KEY','STUDIO_PUBLIC_URL') if not os.getenv(name,'').strip()]
-    if os.getenv('TIKTOK_MEDIA_URL_VERIFIED') != '1':
-        missing.append('TIKTOK_MEDIA_URL_VERIFIED')
-    return {'ready': not missing, 'missing': missing, 'audited': os.getenv('TIKTOK_APP_AUDITED') == '1',
-            'message': 'Cần cấu hình ứng dụng TikTok Developer, quyền video.publish và URL HTTPS đã xác minh.' if missing else '',
-            'scheduler_enabled': os.getenv('TIKTOK_SCHEDULER_ENABLED') == '1'}
+    return configuration(os.environ)
 
 
-def require_ready():
+def require_ready(connect_only=False):
     result = readiness()
-    if not result['ready']:
+    if not result['connect_ready' if connect_only else 'ready']:
         raise HTTPException(503,result['message'])
     root = os.environ['STUDIO_PUBLIC_URL'].rstrip('/')
     u = urlsplit(root)
@@ -105,7 +100,7 @@ def delete_owner(owner: str):
 
 @router.post('/owners/{owner}/connect')
 def connect_account(owner: str):
-    require_ready()
+    require_ready(connect_only=True)
     state = secrets.token_urlsafe(32)
     with ps.db() as db:
         db.execute('DELETE FROM oauth WHERE expires<?', (time.time(),))
@@ -120,7 +115,7 @@ class Callback(BaseModel):
 
 @router.post('/callback')
 def oauth_callback(body: Callback):
-    require_ready()
+    require_ready(connect_only=True)
     with ps.db() as db:
         db.execute('BEGIN IMMEDIATE')
         key = hashlib.sha256(body.state.encode()).hexdigest()
@@ -357,9 +352,6 @@ def validate_creator(post, info, duration):
 
 @router.post('/owners/{owner}/jobs', status_code=201)
 def create_job(owner: str, body: Publication):
-    require_ready()
-    if os.getenv('TIKTOK_SCHEDULER_ENABLED')!='1':
-        raise HTTPException(503,'Chưa bật bộ xử lý lịch đăng trên máy chủ.')
     if not (body.consent and body.watched and body.no_shop_required):
         raise HTTPException(400,'Cần xem video, đồng ý gửi TikTok và xác nhận video không cần gắn giỏ hàng.')
     encoded = ps.canonical(body.model_dump(mode='json'))
@@ -370,6 +362,9 @@ def create_job(owner: str, body: Publication):
             return ps.public_job(duplicate)
         video = ps.owned(db,'videos',body.video_id,owner)
         ps.owned(db,'accounts',body.account_id,owner)
+    require_ready()
+    if os.getenv('TIKTOK_SCHEDULER_ENABLED')!='1':
+        raise HTTPException(503,'Chưa bật bộ xử lý lịch đăng trên máy chủ.')
     if json.loads(video['meta']).get('shop_callout'):
         raise HTTPException(409,'Bản này có lời kêu gọi bấm giỏ hàng. Chưa hỗ trợ đăng TikTok Shop; dùng MP4 thường phù hợp để nghiệm thu.')
     info = creator(owner,body.account_id)
@@ -425,6 +420,12 @@ def job_action(owner: str, jid: str, body: JobAction):
                 raise HTTPException(400,'Chọn giờ trong tương lai và có múi giờ.')
             video = ps.owned(db,'videos',row['video_id'],owner)
             if not video['current'] or video['status']!='APPROVED': raise HTTPException(409,'Video không còn được duyệt.')
+            account = ps.owned(db,'accounts',row['account_id'],owner)
+            if not account['connected']:
+                raise HTTPException(409,'Kết nối lại tài khoản TikTok trước khi đổi lịch.')
+            if db.execute("SELECT 1 FROM jobs WHERE video_id=? AND account_id=? AND id!=? AND status NOT IN ('FAILED','CANCELLED','MISSED','BLOCKED')",
+                          (row['video_id'],row['account_id'],jid)).fetchone():
+                raise HTTPException(409,'Đã có lượt đăng khác cho video và tài khoản này. Theo dõi lượt đó để tránh đăng trùng.')
             ps.set_status(db,jid,'SCHEDULED',due=body.scheduled_at.timestamp())
         return ps.public_job(ps.owned(db,'jobs',jid,owner))
 
@@ -515,15 +516,15 @@ def sync_notion():
 
 @router.post('/tick')
 def tick():
-    if os.getenv('TIKTOK_SCHEDULER_ENABLED')!='1': return {'enabled':False,'processed':0}
-    require_ready()
+    # Pausing new dispatch must not abandon already accepted posts or Notion sync.
+    enabled = os.getenv('TIKTOK_SCHEDULER_ENABLED') == '1'
     now = time.time()
     send_ids, poll_ids = [],[]
     with ps.lock,ps.db() as db:
         db.execute('BEGIN IMMEDIATE')
         for row in db.execute("SELECT * FROM jobs WHERE status='INITIATING' AND lease_until<?",(now,)).fetchall():
             ps.set_status(db,row['id'],'RECONCILE',error='Máy chủ dừng khi bắt đầu gửi. Kiểm tra TikTok trước khi thử lại.')
-        rows = db.execute("SELECT * FROM jobs WHERE status IN ('QUEUED','SCHEDULED') AND due<=? ORDER BY due LIMIT 3",(now,)).fetchall()
+        rows = db.execute("SELECT * FROM jobs WHERE status IN ('QUEUED','SCHEDULED') AND due<=? ORDER BY due LIMIT 3",(now,)).fetchall() if enabled else []
         for row in rows:
             if now-row['due']>900:
                 ps.set_status(db,row['id'],'MISSED',error='Lịch trễ hơn 15 phút. Chọn lại giờ đăng.')
@@ -536,7 +537,7 @@ def tick():
     for jid in send_ids: process_job(jid)
     for jid in poll_ids: poll_job(jid)
     sync_notion()
-    return {'enabled':True,'processed':len(send_ids),'checked':len(poll_ids)}
+    return {'enabled':enabled,'processed':len(send_ids),'checked':len(poll_ids)}
 
 
 @media_router.get('/media/tiktok/{grant}')

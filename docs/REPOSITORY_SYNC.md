@@ -1,15 +1,15 @@
 # Bản hợp nhất Content Studio
 
-Đối chiếu ngày 14/11/2026 bằng các nhánh tải trực tiếp từ GitHub. `main` là bản dùng chung để clone và chạy toàn bộ chương trình.
+Đối chiếu lại ngày 16/11/2026 bằng các nhánh tải trực tiếp từ GitHub. `main` là bản dùng chung để clone và chạy toàn bộ chương trình.
 
 ## Kết quả đối chiếu nhánh
 
 | Nhánh tại thời điểm kiểm tra | Commit | Nội dung và cách hợp nhất |
 |---|---|---|
-| `main` | `6b47461` | Web duyệt 7 bước, Automation v2, MP4, Notion, Telegram và hướng dẫn vận hành. |
+| `main` trước đợt kiểm tra này | `414af15` | Web duyệt 7 bước, Notebook, trợ lý chat, tài khoản, Automation v2, MP4, Notion, Telegram và lịch đăng TikTok. |
 | `Automation` | `704fdec` | Toàn bộ lịch sử đã nằm trong `main`, không có commit riêng còn thiếu. |
 | `docs/content-studio-v2-handoff` | `6a700aa` | Gói bàn giao ban đầu; toàn bộ lịch sử đã nằm trong `main`. |
-| Bản làm việc trên máy | Sau `6b47461` | Bổ sung vào `main` tiện ích Gemini, bộ đầu vào Notebook, chữ trên web và kiểm thử chung. |
+| Đợt tích hợp tiếp theo | Sau `414af15` | Dùng lại cấu hình ứng dụng TikTok đã bàn giao, hiển thị điều kiện còn thiếu và kiểm tra chống đăng trùng. |
 
 Các nhánh cũ được giữ làm lịch sử. Không cần xóa nhánh hoặc chép source thủ công giữa các nhánh. Công việc mới tạo nhánh từ `main` mới nhất rồi mở PR về `main`.
 
@@ -19,13 +19,13 @@ Các nhánh cũ được giữ làm lịch sử. Không cần xóa nhánh hoặc
 |---|---|---|
 | Web và AI | `web/`, `api/`, `studio/`, `prompts/` | Cổng 8001, lưu phiên SQLite, duyệt 7 bước, xuất bundle đã chốt. |
 | Notebook và tiện ích | `studio/output.py`, `extensions/gemini/` | Cùng bundle revision, prompt nguyên văn và hai ảnh từ ZIP. Tiện ích chỉ điền prompt vào tab Gemini khi người dùng bấm. |
-| Automation | `integrations/long-v2/` | API 8000, n8n 5678, nhận JSON nguyên vẹn, lưu Notion, duyệt đúng MP4 qua Telegram. |
+| Automation | `integrations/long-v2/` | API 8000, n8n 5678, nhận JSON nguyên vẹn, lưu Notion, duyệt đúng MP4 qua Telegram; hàng đợi v2 gắn video, tài khoản và lịch đăng. |
 | Contract | `contracts/handoff_v2.py` và bản trong Automation | Hai bản phải khớp; kiểm thử phát hành kiểm tra tự động. |
 | Dữ liệu thật | `STUDIO_DATA_DIR`, Docker volume | Giữ riêng trên máy chạy; không đi theo Git. |
 
 Đã thống nhất tên thao tác trên web, hướng dẫn và tiện ích. ZIP có `handoff.json`, `prompts.md`, `gemini-notebook.md` cùng hai ảnh. Endpoint xuất hỗ trợ `notebook`, đối chiếu revision để không sao chép nhầm bản. Bộ kiểm thử chung bao gồm cả kiểm tra lỗi, trùng thao tác, mất kết nối và nút Telegram của bản MP4 cũ.
 
-Pipeline v1 vẫn dùng endpoint/workflow riêng để tương thích. Workflow đăng TikTok v1 không tự nhận một MP4 v2 chỉ vì trạng thái là `APPROVED`. Luồng v2 hiện bàn giao MP4, caption và hashtag cho người quản lý tài khoản đăng theo [hướng dẫn](HANDOFF_CONTENT_STUDIO_V2.md#6-bàn-giao-để-đăng-tiktok).
+Pipeline v1 vẫn dùng endpoint/workflow riêng để tương thích. Workflow đăng TikTok v1 không tự nhận một MP4 v2 chỉ vì trạng thái là `APPROVED`. Content Studio gọi API v2 trong gói Automation để lập lịch và đăng; chỉ dùng workflow Publishing Scheduler v2 cho hàng đợi này. Đã có mã nguồn và kiểm thử tích hợp, còn nghiệm thu OAuth/đăng thật theo [hướng dẫn](TIKTOK_PUBLISHING_V2.md) và [biên bản đối chiếu](TIKTOK_INTEGRATION_STATUS.md).
 
 ## Cập nhật một máy đã cài
 

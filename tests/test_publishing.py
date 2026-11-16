@@ -177,6 +177,99 @@ class PublishingTests(unittest.TestCase):
         self.assertEqual(self.http.post(self.base+'/jobs',json={**body,'post':{'title':'changed','privacy_level':'SELF_ONLY'}}).status_code,409)
         self.assertEqual(self.http.post(self.base+'/jobs',json=self.body()).status_code,409)
 
+    def test_retry_receipt_survives_paused_or_incomplete_configuration(self):
+        body=self.body(); first=self.job(body)
+        with patch.dict(os.environ,TIKTOK_SCHEDULER_ENABLED='0',TIKTOK_CLIENT_KEY=''):
+            response=self.http.post(self.base+'/jobs',json=body)
+            self.assertEqual(response.status_code,201,response.text)
+            self.assertEqual(response.json()['id'],first['id'])
+        self.fake.publish.assert_not_called()
+
+    def test_reusing_blocked_schedule_cannot_duplicate_replacement(self):
+        old=self.job()
+        with ps.db() as db:ps.set_status(db,old['id'],'BLOCKED')
+        replacement=self.http.post(self.base+'/jobs',json=self.body()).json()
+        response=self.http.post(self.base+'/jobs/'+old['id']+'/actions',json={
+            'version':self.row(old['id'])['version'],'action':'reschedule','scheduled_at':'2099-11-16T10:00:00+07:00'})
+        self.assertEqual(response.status_code,409,response.text)
+        pub.tick();self.fake.publish.assert_called_once()
+        self.assertEqual(self.row(replacement['id'])['status'],'PROCESSING')
+
+    def test_paused_dispatch_still_tracks_accepted_post_and_syncs_notion(self):
+        first=self.job();pub.tick()
+        with ps.db() as db:db.execute('UPDATE jobs SET next_poll=0 WHERE id=?',(first['id'],))
+        self.fake.status.return_value={'status':'PUBLISH_COMPLETE'}
+        with patch.dict(os.environ,TIKTOK_SCHEDULER_ENABLED='0',STUDIO_PUBLIC_URL=''), patch.object(pub,'sync_notion') as sync:
+            result=pub.tick();sync.assert_called_once()
+        self.assertFalse(result['enabled']);self.assertEqual(result['checked'],1)
+        self.assertEqual(self.row(first['id'])['status'],'PUBLISHED')
+        self.fake.publish.assert_called_once()
+
+    def test_configuration_distinguishes_connection_from_posting_without_secrets(self):
+        with patch.dict(os.environ,TIKTOK_MEDIA_URL_VERIFIED='0',TIKTOK_SCHEDULER_ENABLED='0'):
+            result=pub.readiness()
+            self.assertTrue(result['connect_ready']);self.assertFalse(result['ready'])
+            pub.connect_account('owner-a')
+            self.approve()
+            self.assertEqual(self.http.post(self.base+'/jobs',json=self.body()).status_code,503)
+        for changes in ({'TIKTOK_V2_REDIRECT_URI':'https://wrong.example/callback'},
+                        {'TIKTOK_TOKEN_ENCRYPTION_KEY':'invalid-secret-value'},
+                        {'TIKTOK_CLIENT_KEY':'your_tiktok_client_key_here'},
+                        {'STUDIO_PUBLIC_URL':'https://user:secret@studio.example'}):
+            with patch.dict(os.environ,**changes):
+                result=pub.readiness();self.assertFalse(result['connect_ready'])
+                for value in changes.values():self.assertNotIn(value,json.dumps(result))
+                self.assertEqual(self.http.post(self.base+'/connect').status_code,503)
+
+    def test_expired_token_refreshes_only_its_owner_and_failure_never_posts(self):
+        with ps.db() as db:db.execute('UPDATE accounts SET tokens=? WHERE id=?',(ps.encrypt({
+            'access_token':'expired','refresh_token':'fake-refresh','expires_at':0,'scope':'video.publish'}),self.aid))
+        self.fake.refresh.return_value={'access_token':'fresh','refresh_token':'rotated','expires_in':3600}
+        job=self.job();pub.tick()
+        self.fake.refresh.assert_called_once_with('fake-refresh')
+        self.assertEqual(self.fake.publish.call_args.args[0],'fresh')
+        with ps.db() as db:
+            row=db.execute('SELECT tokens FROM accounts WHERE id=?',(self.aid,)).fetchone()
+            self.assertNotIn('rotated',row['tokens'])
+            token=ps.decrypt(row['tokens']);token['expires_at']=0
+            db.execute('UPDATE accounts SET tokens=? WHERE id=?',(ps.encrypt(token),self.aid))
+            db.execute('UPDATE jobs SET next_poll=0 WHERE id=?',(job['id'],))
+        self.fake.refresh.side_effect=TikTokError('invalid_grant')
+        pub.tick()
+        self.fake.publish.assert_called_once()
+        self.assertEqual(self.row(job['id'])['status'],'PROCESSING')
+
+    def test_bridge_to_automation_uses_owner_and_round_trips_real_contract(self):
+        import httpx
+        from api import publications as bridge
+        self.approve()
+        private=self.http
+        real_client=httpx.Client
+        def transport(request):
+            response=private.request(request.method,request.url.path,
+                                     headers=dict(request.headers),content=request.content)
+            return httpx.Response(response.status_code,json=response.json())
+        def local_client(**kwargs):
+            return real_client(transport=httpx.MockTransport(transport),**kwargs)
+        app=FastAPI();app.include_router(bridge.router)
+        browser=TestClient(app)
+        identity=auth.identity.set({'id':'owner-a','role':'admin'})
+        try:
+            with patch.object(bridge.httpx,'Client',side_effect=local_client):
+                result=browser.get('/api/v2/tiktok/accounts')
+                self.assertEqual(result.status_code,200,result.text)
+                self.assertEqual(result.json()['accounts'][0]['id'],self.aid)
+                first=browser.post('/api/v2/publications',json=self.body())
+                self.assertEqual(first.status_code,201,first.text)
+                pub.tick()
+                listing=browser.get('/api/v2/publications').json()
+                self.assertEqual(listing[0]['status'],'PROCESSING')
+                self.assertEqual(listing[0]['video']['sha256'],self.meta['sha256'])
+                other=auth.identity.set({'id':'owner-b','role':'user'})
+                try:self.assertEqual(browser.get('/api/v2/publications').json(),[])
+                finally:auth.identity.reset(other)
+        finally:auth.identity.reset(identity)
+
     def test_private_only_and_required_consent(self):
         self.approve()
         for changes in ({'consent':False},{'post':{'title':'x','privacy_level':'PUBLIC_TO_EVERYONE'}},{'scheduled_at':'2099-11-16T10:00:00'}):
@@ -285,6 +378,15 @@ class PublishingTests(unittest.TestCase):
             pub.tick();pub.tick()
         self.fake.publish.assert_called_once()
         with ps.db() as db:self.assertIsNotNone(db.execute('SELECT error FROM sync_queue WHERE job_id=?',(job['id'],)).fetchone()[0])
+        fake_notion.pages.retrieve.side_effect=None
+        fake_notion.pages.retrieve.return_value={'properties':{'scheduled_at':{},'published_at':{}}}
+        with ps.db() as db:db.execute('UPDATE jobs SET next_poll=0 WHERE id=?',(job['id'],))
+        self.fake.status.return_value={'status':'PUBLISH_COMPLETE'}
+        with patch.object(hv.nc,'notion',fake_notion):pub.tick()
+        self.assertEqual(self.row(job['id'])['status'],'PUBLISHED')
+        self.assertEqual(fake_notion.pages.update.call_args.kwargs['properties']['status']['select']['name'],'PUBLISHED')
+        self.fake.publish.assert_called_once()
+        with ps.db() as db:self.assertEqual(db.execute('SELECT count(*) FROM sync_queue').fetchone()[0],0)
 
 
 if __name__=='__main__':unittest.main()

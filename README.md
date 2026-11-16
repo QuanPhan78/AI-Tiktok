@@ -4,6 +4,8 @@ Content Studio giúp nhóm duyệt nội dung TikTok qua 7 bước, tạo gói p
 
 **Mới: [tài khoản web, duyệt MP4, kết nối TikTok và lập lịch](docs/TIKTOK_PUBLISHING_V2.md).** Mỗi người có dữ liệu riêng. Có thể duyệt trên web, chọn tài khoản TikTok và đặt giờ Việt Nam. Phần đăng thật cần ứng dụng TikTok Developer có quyền `video.publish`; hiện chưa có bằng chứng nghiệm thu đăng thật. Dữ liệu SEJOY và luồng Telegram hiện có được giữ nguyên.
 
+Source nhánh `Automation` của Long đã có trong `main`. Đợt tích hợp này dùng lại ứng dụng TikTok đã bàn giao; không yêu cầu tạo ứng dụng mới ngay. Xem [đã tích hợp gì và điều kiện còn thiếu](docs/TIKTOK_INTEGRATION_STATUS.md).
+
 **Bắt đầu từ [hướng dẫn sử dụng và bàn giao](docs/HANDOFF_CONTENT_STUDIO_V2.md).** Bài hướng dẫn có các bước chạy web, tạo clip, cấu hình Notion và Telegram, lấy caption, hashtag và bàn giao bản đã duyệt để đăng.
 
 ```mermaid

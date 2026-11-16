@@ -2,7 +2,7 @@
 
 Content Studio có tài khoản riêng, đăng nhập bằng mật khẩu, kết nối TikTok qua OAuth và bộ xử lý lịch lưu bền vững. MP4 phải được duyệt đúng phiên bản trước khi đăng. Người mới dùng duyệt trên web; dữ liệu dự án đã bàn giao Notion tiếp tục dùng quyết định Telegram.
 
-**Trạng thái triển khai:** mã nguồn và kiểm thử giả lập đã có. Chủ dự án chưa có ứng dụng TikTok Developer được xác nhận quyền `video.publish`, nên chưa nghiệm thu OAuth hoặc đăng thật. Không có mã bài thử được tạo giả. Chưa tích hợp TikTok Shop. Bản SEJOY r26 có lời kêu gọi giỏ hàng vẫn được giữ để đối chiếu, không tự đăng bản đó qua luồng video thường.
+**Trạng thái triển khai:** phần Automation của Long đã nằm trong `main` và được nối với giao diện v2. Đã tìm thấy và dùng lại cấu hình ứng dụng TikTok của dự án trên máy nghiệm thu. Bản ghi kết nối cũ từng có `video.publish`, nhưng access token đã hết hạn; chưa xác nhận quyền hiện tại, OAuth v2 hoặc đăng thật. Xem [biên bản đối chiếu tích hợp](TIKTOK_INTEGRATION_STATUS.md). Chưa tích hợp TikTok Shop; SEJOY r26 có lời kêu gọi giỏ hàng vẫn được giữ để đối chiếu, không tự đăng qua luồng video thường.
 
 ## 1. Dùng trên giao diện
 
@@ -15,6 +15,8 @@ Content Studio có tài khoản riêng, đăng nhập bằng mật khẩu, kết
 7. Bấm **Cập nhật kết quả**. Chỉ trạng thái `PUBLISHED` từ TikTok mới được hiển thị là đã đăng. Bài riêng tư có thể không có mã/link công khai.
 
 MP4 tối đa 45 MB, có hình H.264 và thời lượng đọc được. Thay MP4 hoặc mở kịch bản để sửa sẽ hủy lịch chưa gửi và yêu cầu duyệt lại. Khi đang gửi hoặc chưa biết TikTok đã nhận chưa, phần mềm chặn thay bản đó.
+
+Mục **Tài khoản TikTok** hiển thị từng điều kiện còn thiếu, cách hoàn tất và trạng thái chưa kết nối tài khoản. Có thể kết nối TikTok khi cấu hình đăng nhập đã đủ, trước khi xác minh tên miền MP4; nút đăng vẫn bị chặn cho tới khi đủ điều kiện và bật bộ xử lý. Dấu “đã cấu hình” chỉ xác nhận thiết lập trên máy, không thay cho xác nhận quyền từ TikTok. Lỗi gửi API giữ nguyên caption đang sửa và mã yêu cầu để thử lại không tạo lịch trùng.
 
 ## 2. Chạy trên máy và Docker
 
@@ -35,13 +37,15 @@ Chỉ chạy một bản web ghi vào cùng database. Dừng bản Python ở c�
 
 `docker-compose.public.yml` bật đăng nhập, chặn API v1 trên public web. Thiết lập quản trị chỉ qua cổng localhost 8001; gateway chặn `/api/v2/auth/setup`. n8n và API nội bộ không mở ra Internet. Có thể tiếp tục gateway webhook cũ ở 5679 cho Telegram.
 
-## 3. Cấu hình TikTok Developer khi sẵn sàng
+## 3. Dùng lại ứng dụng TikTok của dự án
 
-Bạn **chưa cần gửi khóa trong chat**. Tạo tài khoản Developer, ứng dụng web hướng tới người dùng bên ngoài, thêm Login Kit và Content Posting API/Direct Post. Đây là điều kiện để thử đăng thật, không phải cam kết được TikTok xét duyệt. Công cụ chỉ phục vụ tài khoản nội bộ của nhóm không phù hợp hướng dẫn Direct Post. [Hướng dẫn chính thức](https://developers.tiktok.com/docs/en/content-sharing-guidelines).
+Kiểm tra ứng dụng Long đã dùng trước; không cần tạo một ứng dụng Developer khác chỉ vì đổi giao diện sang Content Studio. Người quản lý ứng dụng xác nhận đúng dự án, quyền sử dụng, Login Kit, Direct Post và `video.publish`. Dùng cặp `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` của ứng dụng đó trong `.env` của Automation; không ghi khóa vào source hay chat. Giữ cấu hình v1 còn sử dụng. Không sao chép token tài khoản dùng chung từ bảng Notion v1 vào các tài khoản web: mỗi người tự kết nối qua OAuth v2.
+
+Chỉ xem xét ứng dụng mới nếu ứng dụng hiện có không thể dùng cho dự án. Việc có source hoặc khóa không chứng minh ứng dụng đã được audit. Khi triển khai Direct Post công khai, ứng dụng cần đáp ứng yêu cầu dành cho nhiều người dùng, không chỉ công cụ nội bộ. [Hướng dẫn chính thức](https://developers.tiktok.com/docs/en/content-sharing-guidelines).
 
 1. Dùng tên miền HTTPS cố định của gói miễn phí đang có, trỏ tunnel tới gateway **8080**. Ví dụ `ngrok http 8080 --url=TEN-MIEN-MIEN-PHI-CUA-BAN`. Không đăng ký gói trả phí. Kiểm tra hạn mức gói; nếu hết, dừng và thử lại sau.
-2. Điền `STUDIO_PUBLIC_URL=https://...` không có đường dẫn; `TIKTOK_V2_REDIRECT_URI` phải đúng URL đó cộng `/api/v2/tiktok/callback`. Đặt cùng URL cho web/Automation. Khai báo chính sách `/policy` và địa chỉ hỗ trợ `STUDIO_SUPPORT_CONTACT` trước khi mở đăng ký công khai.
-3. Điền `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET` trong `.env` của Automation. Tạo khóa Fernet cho `TIKTOK_TOKEN_ENCRYPTION_KEY` bằng lệnh dưới; giữ khóa này cùng bản sao lưu, không đổi tùy tiện:
+2. Điền `STUDIO_PUBLIC_URL=https://...` không có đường dẫn; `TIKTOK_V2_REDIRECT_URI` phải đúng URL đó cộng `/api/v2/tiktok/callback`. Thêm chính xác callback này trong cùng ứng dụng TikTok, giữ callback v1 nếu còn dùng. Đặt cùng URL cho web/Automation. Khai báo chính sách `/policy` và địa chỉ hỗ trợ `STUDIO_SUPPORT_CONTACT` trước khi mở đăng ký công khai.
+3. Giữ khóa Fernet `TIKTOK_TOKEN_ENCRYPTION_KEY` đã có. Chỉ khi chưa có khóa mã hóa và chưa lưu kết nối nào mới tạo bằng lệnh dưới; lưu cùng bản sao lưu, không thay khóa đang dùng:
 
 ```powershell
 # Chạy từ gốc repo; lệnh hiển thị khóa mới chỉ trên terminal của bạn.
@@ -49,7 +53,9 @@ Bạn **chưa cần gửi khóa trong chat**. Tạo tài khoản Developer, ứn
 ```
 
 4. Xác minh quyền sở hữu tên miền hoặc URL prefix `/media/tiktok/` trong TikTok Developer. Nếu TikTok cấp file xác minh, đặt vào `integrations/long-v2/verification/`; gateway chỉ phục vụ `tiktok*.txt`. Chỉ đặt `TIKTOK_MEDIA_URL_VERIFIED=1` **sau khi xác minh thật**.
-5. Xin quyền `video.publish`. Giữ `TIKTOK_APP_AUDITED=0` khi chưa được audit: UI chỉ cho `SELF_ONLY`, tài khoản thử phải ở chế độ riêng tư. Sau khi đủ điều kiện và sẵn sàng chạy lịch, đặt `TIKTOK_SCHEDULER_ENABLED=1`, khởi động lại dịch vụ. Không đổi cờ audit để vượt hạn chế. [Direct Post API](https://developers.tiktok.com/docs/en/content-posting-api-reference-direct-post).
+5. Xác nhận ứng dụng có `video.publish` và tài khoản vừa kết nối cấp quyền đó; nếu thiếu, hoàn tất quyền trong ứng dụng hiện có. Giữ `TIKTOK_APP_AUDITED=0` khi chưa được audit: UI chỉ cho `SELF_ONLY`, tài khoản thử phải ở chế độ riêng tư. Sau khi đủ điều kiện và sẵn sàng chạy lịch, đặt `TIKTOK_SCHEDULER_ENABLED=1`, khởi động lại dịch vụ. Không đổi cờ audit để vượt hạn chế. [Direct Post API](https://developers.tiktok.com/docs/en/content-posting-api-reference-direct-post).
+
+Kiểm tra cấu hình từ gốc repo bằng `python scripts/check_tiktok_setup.py`. Có thể chỉ định `--env-file` để kiểm tra một file được bàn giao. Lệnh chỉ đọc file, không gọi TikTok, không in giá trị khóa và không sửa cấu hình. Mã thoát `1` nghĩa là cấu hình gửi video chưa đủ; kết quả cũng nêu riêng khả năng kết nối tài khoản và trạng thái bộ xử lý. Sau khi sửa `.env`, nạp lại đúng stack Docker đang dùng rồi mở lại mục TikTok để đọc trạng thái thực tế trong dịch vụ.
 
 Video trên máy chủ được TikTok lấy bằng `PULL_FROM_URL` qua URL ký ngẫu nhiên, có hạn hai giờ, không redirect. Không trả token hoặc đường dẫn file nội bộ cho trình duyệt. Không mở URL media công khai lâu dài.
 
@@ -58,6 +64,8 @@ Video trên máy chủ được TikTok lấy bằng `PULL_FROM_URL` qua URL ký 
 Import [Content Studio - Publishing Scheduler v2](../integrations/long-v2/n8n/Content%20Studio%20-%20Publishing%20Scheduler%20v2.json). Trong node **Process owned schedules**, chọn Header Auth với tên header `X-Content-Token`, giá trị bằng `WEBHOOK_V2_TOKEN`. Lưu credential trong n8n rồi bật workflow. Workflow chạy mỗi phút, gọi API nội bộ; không có khóa trong file JSON.
 
 Không bật lại các workflow lập lịch/đăng/retry **v1** cho cùng dữ liệu v2. V2 dùng `publications.sqlite3` trong volume Automation; Notion là bản đối chiếu của SEJOY, không phải hàng đợi chính. Workflow cũ vẫn giữ trong source để tương thích các hệ thống v1 riêng.
+
+Đặt `TIKTOK_SCHEDULER_ENABLED=0` sẽ dừng gửi bài mới. Giữ workflow v2 chạy để tiếp tục đọc kết quả những bài TikTok đã nhận và thử lại đồng bộ Notion. Một workflow chạy thành công khi bộ xử lý tắt không phải bằng chứng đã đăng bài. Lịch lỗi có lượt thay thế không được bật lại để tạo hai bài cùng video/tài khoản.
 
 | Trạng thái | Ý nghĩa / cách xử lý |
 |---|---|

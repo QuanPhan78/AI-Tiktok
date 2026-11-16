@@ -164,4 +164,4 @@ Khi gửi phiên bản MP4 thay thế, nút trong tin nhắn cũ hết hiệu l�
 
 ## Lịch đăng và TikTok đa tài khoản v2
 
-Xem [hướng dẫn triển khai, OAuth, lịch và nghiệm thu](../../docs/TIKTOK_PUBLISHING_V2.md). Workflow mới dùng database riêng theo tài khoản; không trộn lịch v1 vào dữ liệu v2. Phần đăng thật còn chờ ứng dụng TikTok Developer và quyền video.publish.
+Xem [hướng dẫn triển khai, OAuth, lịch và nghiệm thu](../../docs/TIKTOK_PUBLISHING_V2.md). Workflow mới dùng database riêng theo tài khoản; không trộn lịch v1 vào dữ liệu v2. Ưu tiên dùng lại ứng dụng TikTok của dự án; từng người tự kết nối tài khoản, không dùng token Notion v1 chung. Mã nguồn đã tích hợp; cấu hình và bằng chứng đăng thật được ghi riêng trong [biên bản đối chiếu](../../docs/TIKTOK_INTEGRATION_STATUS.md).

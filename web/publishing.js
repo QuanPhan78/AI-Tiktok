@@ -13,14 +13,14 @@
   function timeVN(unix){return new Date(unix*1000).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});}
   function isoVN(value){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw new Error('Chọn đủ ngày và giờ Việt Nam.');return value+':00+07:00';}
   async function open(sid=null){
-    const token=++epoch;current=null;video=null;pendingOperation=null;content.replaceChildren();msg('Đang đọc dữ liệu…');if(!dialog.open)dialog.showModal();
+    const token=++epoch;current=null;video=null;creatorInfo=null;pendingOperation=null;content.replaceChildren();msg('Đang đọc dữ liệu…');if(!dialog.open)dialog.showModal();
     if(sid){const loaded=await api('/sessions/'+sid);if(token!==epoch)return;current=loaded;renderVideo(token);}
     const section=node('section',null,'pub-card');content.append(section);
     try{const data=await api('/tiktok/accounts');if(token!==epoch)return;capabilities=data.capabilities;accountRows=data.accounts;renderAccounts(section);}
     catch(e){if(token===epoch){section.append(node('p',e.message));msg('Phần duyệt và lịch cần Automation đang chạy.',true);}return;}
     if(current)renderPost();
     else await renderOrdinary(token);
-    const list=node('section',null,'pub-card');list.id='publication-list';content.append(list);await refreshJobs(list,token);msg(capabilities.ready?'':capabilities.message);
+    const list=node('section',null,'pub-card');list.id='publication-list';content.append(list);await refreshJobs(list,token);if(token===epoch)msg(capabilities.ready&&capabilities.scheduler_enabled?'':capabilities.message);
   }
   async function renderOrdinary(token){
     const section=node('section',null,'pub-card');content.append(section);section.append(node('h3','Video thường đã hoàn chỉnh'),node('p','Dành cho MP4 không cần gắn giỏ hàng. Video từ quy trình 7 bước được mở bằng nút Đăng TikTok ở phiên tương ứng.'));
@@ -34,18 +34,26 @@
     for(const row of rows)section.append(button((row.caption||'Video không có caption').slice(0,80)+' · '+statusLabels[row.status],()=>openOrdinary(row)));
   }
   async function openOrdinary(row){
-    const token=++epoch;video=row;current={standalone:true,id:row.id,product:{name:'Video thường'},video:{version:row.version,bundle_revision:row.revision},bundle:{revision:row.revision,scenes:[],publishing:{captions:[row.caption],selected_caption:0,hashtags:[]}}};
+    const token=++epoch;video=row;creatorInfo=null;pendingOperation=null;current={standalone:true,id:row.id,product:{name:'Video thường'},video:{version:row.version,bundle_revision:row.revision},bundle:{revision:row.revision,scenes:[],publishing:{captions:[row.caption],selected_caption:0,hashtags:[]}}};
     content.replaceChildren();msg();const section=node('section',null,'pub-card');content.append(section);section.append(node('h3','Xem và duyệt đúng video'));
     const player=node('video');player.controls=true;player.preload='metadata';player.src='/api/v2/publication-videos/'+row.id+'/file';section.append(player);
     const watched=check(section,'pub-watched','Tôi đã xem hết video, kiểm tra nội dung và quyền sử dụng.');const state=node('p',statusLabels[row.status]);section.append(state);
     for(const [approve,label] of [[true,'Duyệt video này'],[false,'Video cần sửa']])section.append(button(label,async()=>{if(!watched.checked)throw new Error('Xem video và xác nhận trước khi duyệt.');const d=await api('/publication-videos/'+row.id+'/review','POST',{approve,watched:true,sha256:row.sha256});if(token!==epoch)return;video.status=d.status;state.textContent=statusLabels[d.status];}));
+    const accounts=node('section',null,'pub-card');content.append(accounts);renderAccounts(accounts);
     renderPost();const list=node('section',null,'pub-card');list.id='publication-list';content.append(list);await refreshJobs(list,token);
   }
   function renderAccounts(parent){
     parent.append(node('h3','Tài khoản TikTok'));
-    if(!capabilities.ready)parent.append(node('p','Chưa thể đăng thật. '+capabilities.message,'pub-note'));
-    parent.append(button('Kết nối tài khoản TikTok',async()=>{const d=await api('/tiktok/accounts/connect','POST');const u=new URL(d.url);if(u.origin!=='https://www.tiktok.com')throw new Error('Địa chỉ kết nối chưa hợp lệ.');location.assign(u.href);},!capabilities.ready));
-    for(const account of accountRows){const row=node('p',account.nickname+(account.connected?' · Đã kết nối':' · Đã ngắt'));if(account.connected)row.append(button('Ngắt kết nối',async()=>{if(!confirm('Ngắt tài khoản này và hủy các lịch chưa gửi?'))return;const d=await api('/tiktok/accounts/'+account.id,'DELETE');await open(current?.id);if(!d.revoked_at_tiktok)msg('Đã ngắt tại Content Studio. TikTok chưa xác nhận thu hồi; kiểm tra quyền ứng dụng trong TikTok.');}));parent.append(row);}
+    parent.append(node('p',capabilities.message,'pub-note'));
+    if(capabilities.checks?.length){
+      const list=node('ul');list.className='pub-setup';
+      for(const check of capabilities.checks){const item=node('li',(check.ok?'✓ Đã cấu hình: ':'Cần hoàn tất: ')+check.label);if(!check.ok)item.append(node('p',check.action,'pub-note'));list.append(item);}
+      parent.append(list);
+    }
+    if(capabilities.permission_note)parent.append(node('p',capabilities.permission_note,'pub-note'));
+    if(!accountRows.some(a=>a.connected))parent.append(node('p','Chưa kết nối tài khoản TikTok. Bạn cần tự đăng nhập và cấp quyền cho tài khoản muốn đăng.'));
+    parent.append(button('Kết nối tài khoản TikTok',async()=>{const d=await api('/tiktok/accounts/connect','POST');const u=new URL(d.url);if(u.origin!=='https://www.tiktok.com')throw new Error('Địa chỉ kết nối chưa hợp lệ.');location.assign(u.href);},!(capabilities.connect_ready??capabilities.ready)));
+    for(const account of accountRows){const row=node('p',account.nickname+(account.connected?' · Đã kết nối':' · Đã ngắt'));if(account.connected)row.append(button('Ngắt kết nối',async()=>{if(!confirm('Ngắt tài khoản này và hủy các lịch chưa gửi?'))return;const d=await api('/tiktok/accounts/'+account.id,'DELETE');await open(current?.standalone?null:current?.id);if(!d.revoked_at_tiktok)msg('Đã ngắt tại Content Studio. TikTok chưa xác nhận thu hồi; kiểm tra quyền ứng dụng trong TikTok.');}));parent.append(row);}
   }
   function renderVideo(token){
     const s=current,v=s.video,b=s.bundle,section=node('section',null,'pub-card');content.append(section);
@@ -96,6 +104,7 @@
       await api('/publications','POST',{...body,operation_id:pendingOperation.id});pendingOperation=null;msg('Đã lưu lượt đăng. TikTok chưa được coi là đã đăng cho tới khi có kết quả xác nhận.');await refreshJobs($('#publication-list'),epoch);
     }
     const publishButtons=[button('Đăng ngay',()=>send(false),!capabilities.ready||!capabilities.scheduler_enabled),button('Đặt lịch đăng',()=>send(true),!capabilities.ready||!capabilities.scheduler_enabled)];actions.append(...publishButtons);
+    if(!capabilities.ready||!capabilities.scheduler_enabled)section.append(node('p',capabilities.message+' Video và bản nháp vẫn được giữ để tiếp tục sau.','pub-note'));
     function disclosureState(){disclosure.hidden=!commercial.checked;disclosureNote.textContent=branded.checked?'TikTok sẽ gắn nhãn Paid partnership. Không dùng quyền Chỉ mình tôi.':organic.checked?'TikTok sẽ gắn nhãn Promotional content.':'Chọn thương hiệu của bạn, bên thứ ba hoặc cả hai.';
       const invalid=commercial.checked&&(!branded.checked&&!organic.checked||branded.checked&&privacy.value==='SELF_ONLY');for(const b of publishButtons)b.disabled=!capabilities.ready||!capabilities.scheduler_enabled||invalid;
     }commercial.onchange=branded.onchange=organic.onchange=privacy.onchange=disclosureState;
