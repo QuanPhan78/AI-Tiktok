@@ -23,6 +23,29 @@ def enabled():
     return os.getenv('STUDIO_AUTH_ENABLED', '0') == '1'
 
 
+def local_only():
+    return not enabled() and os.getenv('STUDIO_LOCAL_ONLY', '0') == '1'
+
+
+def check_local_request(request):
+    # The public gateway exposes only the OAuth callback, never the editor/API.
+    if request.url.path == '/api/v2/tiktok/callback' and request.method == 'GET':
+        return
+    if request.url.path == '/policy' and request.method in ('GET', 'HEAD'):
+        return
+    loopback = ('localhost', '127.0.0.1', '::1')
+    direct = request.client and request.client.host in loopback
+    docker_proxy = os.getenv('STUDIO_LOCAL_DOCKER', '0') == '1'
+    if (request.url.hostname not in loopback or request.headers.get('x-forwarded-for')
+            or not (direct or docker_proxy)):
+        raise HTTPException(403, 'Mở Content Studio trực tiếp tại http://127.0.0.1:8001/app trên máy này.')
+    if request.method not in ('GET', 'HEAD', 'OPTIONS'):
+        origin = request.headers.get('origin')
+        if ((origin and origin not in ('http://127.0.0.1:8001', 'http://localhost:8001', 'http://[::1]:8001'))
+                or request.headers.get('sec-fetch-site') == 'cross-site'):
+            raise HTTPException(403, 'Thao tác phải gửi từ Content Studio trên máy này.')
+
+
 def current():
     return identity.get() or {'id': 'local', 'username': 'Máy này', 'role': 'admin'}
 
@@ -122,6 +145,9 @@ def login_cookie(user, response, request):
 
 @router.get('/me')
 def me(request: Request):
+    if not enabled():
+        return {'enabled': False, 'setup_required': False, 'user': None, 'csrf': '',
+                'support_contact': os.getenv('STUDIO_SUPPORT_CONTACT', '')}
     with init().db() as db:
         setup = not db.execute('SELECT 1 FROM users LIMIT 1').fetchone()
     return {'enabled': enabled(), 'setup_required': setup, 'user': getattr(request.state, 'user', None),
@@ -236,10 +262,17 @@ def logout(request: Request, response: Response):
 
 
 async def middleware(request, call_next):
-    from starlette.responses import JSONResponse
+    from starlette.responses import JSONResponse, RedirectResponse
     path = request.url.path
     user = None
     try:
+        if local_only():
+            check_local_request(request)
+        if not enabled():
+            if path in ('/login', '/account'):
+                return RedirectResponse('/app', status_code=303)
+            if path.startswith('/api/v2/auth/') and path != '/api/v2/auth/me':
+                raise HTTPException(404, 'Bản dùng cá nhân không sử dụng tài khoản Content Studio.')
         if enabled():
             token = request.cookies.get(COOKIE, '')
             with init().db() as db:

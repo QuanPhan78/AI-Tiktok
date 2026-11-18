@@ -2,9 +2,9 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from contracts.handoff_v2 import HandoffV2
+from contracts.handoff_v2 import parse_handoff
 from knowledge_base.validator import validate_script
-from studio.models import CTA, REFERENCE, TAIL
+from studio.models import CTA, REFERENCE, TAIL, content_mode
 
 CHAR_DIR = Path(__file__).resolve().parents[1] / "knowledge_base" / "characters" / "images"
 
@@ -22,7 +22,7 @@ def character_asset(character, store):
             "sha256": hashlib.sha256(content).hexdigest(), "size": len(content), "media_type": "image/png"}
 
 
-def compile_prompt(character, scene, analysis, plan, dialogue, audio_mode):
+def compile_prompt(character, scene, analysis, plan, dialogue, audio_mode, mode="tiktok_shop"):
     product = (analysis["product_description_en"] + ", exactly as in the attached reference photo, same shape, colors and proportions"
                if scene["product_visible"] else "no product visible in this clip")
     block = character["consistency_block"].replace("[PRODUCT]", product)
@@ -40,7 +40,7 @@ def compile_prompt(character, scene, analysis, plan, dialogue, audio_mode):
                      "Natural blinking and relaxed gestures.")
         if audio_mode == "speaking":
             timing = "Start speaking around 0.3 seconds and finish before the last 0.7 seconds."
-            if scene["id"] == "4":
+            if scene["id"] == "4" and mode == "tiktok_shop":
                 timing = "Start speaking around 0.2 seconds with a natural, slightly brisk pace."
             sound = f"{who} says the line once in Vietnamese, warmly and naturally. {timing}"
         sound += "\nAmbient noise: soft quiet room tone."
@@ -66,6 +66,8 @@ def build_bundle(s, store, revision):
     except (KeyError, OSError):
         raise ValueError("Thiếu ảnh tham chiếu. Kiểm tra ảnh sản phẩm ở Bước 1 và nhân vật ở Bước 3.")
     warnings = ["Mỗi clip dự kiến 8 giây; cần kiểm tra giọng nói trong clip thật, đặc biệt câu chốt đơn."]
+    if content_mode(s) == "ordinary":
+        warnings = ["Mỗi clip dự kiến 8 giây; kiểm tra thời lượng và nhịp nói trên clip thật."]
     warnings.extend(s["quality"].get("warnings", []))
     scenes = []
     for i, scene in enumerate(plan["scenes"], 1):
@@ -73,7 +75,7 @@ def build_bundle(s, store, revision):
         words = len(line.split())
         planned = bool(scene.get("shot_en", "").strip())
         if planned:
-            needs_timing_check = scene["id"] != "4" and not 18 <= words <= 24
+            needs_timing_check = (scene["id"] != "4" or content_mode(s) == "ordinary") and not 18 <= words <= 24
         else:
             # Reconstruct the exact warnings in previously exported bundles.
             needs_timing_check = not 20 <= words <= 26 or bool(re.search(r"\d", line))
@@ -81,7 +83,7 @@ def build_bundle(s, store, revision):
             warnings.append(f"Cảnh {scene['id']}: {words} từ, cần kiểm tra nhịp đọc.")
         scenes.append({"id": scene["id"], "order": i, "duration_seconds": 8,
                        "part": scene["part"], "action_vi": scene["action_vi"], "dialogue_vi": line,
-                       "prompt_en": compile_prompt(char, scene, approved["1"], plan, line, s["audio_mode"]),
+                       "prompt_en": compile_prompt(char, scene, approved["1"], plan, line, s["audio_mode"], content_mode(s)),
                        "overlay_text": pub["overlay_scene2"] if scene["id"] == "2" else product["price"] if scene["id"] == "4" else ""})
     old_metadata = s.get("bundle", {}).get("metadata", {})
     metadata = {"created_at": s["created_at"], "model_used": s.get("model_used", old_metadata.get("model_used", "unknown")),
@@ -96,7 +98,10 @@ def build_bundle(s, store, revision):
             "qc": {"qc_score": s["quality"]["qc_score"], "passed": True, "feedback": s["quality"]["feedback"],
                    "warnings": warnings, "rules_version": "bao-7steps-v2"},
             "metadata": metadata}
-    bundle = HandoffV2.model_validate(data).model_dump()
+    if "content_mode" in s:
+        data.update(schema_version="2.1", content_mode=content_mode(s))
+        data["qc"]["rules_version"] = "content-studio-2.1"
+    bundle = parse_handoff(data).model_dump()
     # Scan rendered/ad copy, not metadata, URLs or diagnostic messages.
     review = {"scenes": [{"dialogue": x["dialogue_vi"], "visual": x["action_vi"], "prompt": x["prompt_en"]} for x in scenes],
               "hashtags": pub["hashtags"], "post_caption": "\n".join(pub["captions"]), "slogans": "\n".join(pub["slogans"]),
@@ -114,6 +119,7 @@ def build_bundle(s, store, revision):
 def markdown(bundle):
     lines = ["# Bộ prompt đã duyệt", "", "Sản phẩm: " + bundle["product"]["name"],
              "Mã yêu cầu: " + bundle["request_id"], f"Phiên bản: {bundle['revision']}", ""]
+    lines.append("Loại nội dung: " + ("Video thường" if bundle.get("content_mode") == "ordinary" else "Video TikTok Shop"))
     for s in bundle["scenes"]:
         lines += [f"## Cảnh {s['id']} — {s['part']} — 8 giây", "", "```text", s["prompt_en"], "```", ""]
         if bundle["character"]["audio_mode"] == "voiceover":
@@ -141,6 +147,7 @@ def notebook_markdown(bundle, plan, asset_names):
         "",
         f"- Sản phẩm: {bundle['product']['name']}",
         f"- Phiên bản đã duyệt: r{bundle['revision']}",
+        "- Loại nội dung: " + ("Video thường — không gắn giỏ hàng." if bundle.get("content_mode") == "ordinary" else "Video TikTok Shop — chưa hỗ trợ đăng tự động."),
         f"- Thứ tự cảnh: {order}",
         f"- Khung dọc 9:16, mục tiêu {scenes[0]['duration_seconds']} giây mỗi cảnh.",
         f"- Âm thanh: {audio}",

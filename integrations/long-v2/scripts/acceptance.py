@@ -14,10 +14,10 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 if (ROOT / "contracts").exists():
-    from contracts.handoff_v2 import HandoffV2
+    from contracts.handoff_v2 import parse_handoff
 else:
     sys.path.insert(0, str(ROOT / "python-service"))
-    from app.contracts_v2 import HandoffV2
+    from app.contracts_v2 import parse_handoff
 
 
 def canonical(value):
@@ -32,7 +32,7 @@ def compare(bundle, receipt, readback, expected_database=None, archive=None):
     if not all(isinstance(value, dict) for value in (bundle, receipt, readback)):
         raise ValueError("Cần ba đối tượng JSON hợp lệ.")
     try:
-        HandoffV2.model_validate(bundle)
+        parse_handoff(bundle)
     except ValueError:
         raise ValueError("Gói xuất không khớp schema v2.") from None
     digest = hashlib.sha256(canonical(bundle)).hexdigest()
@@ -70,7 +70,7 @@ def compare(bundle, receipt, readback, expected_database=None, archive=None):
             "payload_sha256": digest, "notion_page_id": data["notion_page_id"],
             "notion_database_id": data.get("notion_database_id"), "scene_count": len(bundle["scenes"]),
             "zip_images_checked": bool(archive), "manual_acceptance_complete": False,
-            "still_requires": ["Bảo xác nhận clip Cảnh 2", "Long xác nhận Notion và lưu trữ sau restart", "Quân chốt biên bản"]}
+            "still_requires": ["Xem và duyệt MP4 thật", "Đối chiếu Notion và lưu trữ sau restart", "Chốt biên bản nghiệm thu"]}
 
 
 def preflight(side):
@@ -79,8 +79,10 @@ def preflight(side):
         if not os.getenv("GEMINI_API_KEY"):
             errors.append("Thiếu GEMINI_API_KEY.")
         url = urlsplit(os.getenv("WEBHOOK_V2_URL", ""))
-        if url.scheme != "https" or not url.hostname or url.username or url.password or url.query or url.fragment:
-            errors.append("Thiếu URL HTTPS production v2 hợp lệ của Long.")
+        local = url.scheme == "http" and url.hostname in ("127.0.0.1", "localhost", "::1", "n8n")
+        if (not (url.scheme == "https" or local) or not url.hostname
+                or url.username or url.password or url.query or url.fragment):
+            errors.append("Cần webhook v2 nội bộ trên máy/Docker hoặc URL HTTPS hợp lệ; không đặt khóa trong URL.")
         if not os.getenv("WEBHOOK_V2_TOKEN", "").strip():
             errors.append("Thiếu WEBHOOK_V2_TOKEN; không đặt token trong URL hoặc chat.")
     else:

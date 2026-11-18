@@ -51,12 +51,16 @@ class Store:
     def dump(value):
         return json.dumps(value, ensure_ascii=False, sort_keys=True)
 
-    def create(self, product):
+    def create(self, product, content_mode="ordinary"):
         sid = str(uuid.uuid4())
         s = {"id": sid, "request_id": "vid_" + sid.replace("-", ""), "revision": 0,
              "step": 1, "status": "awaiting_input", "product": product, "draft": None,
              "approved": {}, "dialogues": {}, "scene_cursor": 0, "audio_mode": "speaking",
              "warnings": [], "validation": [], "handoff": None, "created_at": now(), "updated_at": now()}
+        if content_mode is not None:
+            if content_mode not in ("ordinary", "tiktok_shop"):
+                raise ValueError("Loại nội dung chưa hợp lệ.")
+            s["content_mode"] = content_mode
         with self.db() as db:
             db.execute("INSERT INTO sessions VALUES(?,?,?)", (sid, self.dump(s), s["updated_at"]))
         return s

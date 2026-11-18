@@ -29,7 +29,7 @@ class StudioV2Tests(unittest.TestCase):
     def test_four_and_five_scene_roundtrip_and_fixed_cta(self):
         for count in (4, 5):
             with self.subTest(count=count):
-                s = self.store.create(self.s["product"])
+                s = self.store.create(self.s["product"], content_mode=None)
                 done = complete(self.store, self.engine, s, count)
                 bundle = done["bundle"]
                 self.assertEqual(done["status"], "ready")
@@ -210,7 +210,7 @@ class StudioV2Tests(unittest.TestCase):
             self.assertEqual(client.get("/static/studio.js").status_code, 200)
             for count, mode in ((4, "speaking"), (5, "voiceover")):
                 with self.subTest(count=count, mode=mode):
-                    session = self.store.create(self.s["product"])
+                    session = self.store.create(self.s["product"], content_mode=None)
                     bundle = complete(self.store, self.engine, session, count, mode)["bundle"]
                     revision = bundle["revision"]
                     exports = f"/api/v2/sessions/{session['id']}/export"

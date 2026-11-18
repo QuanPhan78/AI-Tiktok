@@ -12,6 +12,7 @@ window.StudioAuth = {user:null,csrf:'',enabled:false};
   async function request(path,body){const r=await fetch('/api/v2/auth/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:'Kiểm tra tên đăng nhập và mật khẩu (ít nhất 12 ký tự).');return d;}
   auth.ready=(async()=>{
     const r=await nativeFetch('/api/v2/auth/me');const data=await r.json();Object.assign(auth,data);
+    if(!data.enabled && ['/login','/account'].includes(location.pathname)){location.replace('/app');return false;}
     const form=document.querySelector('#auth-form');
     if(form){
       const mode=document.querySelector('#auth-mode'),msg=document.querySelector('#auth-message');
@@ -28,7 +29,8 @@ window.StudioAuth = {user:null,csrf:'',enabled:false};
     if(data.enabled&&!data.user){location.assign('/login');return false;}
     auth.user=data.user||{id:'local',username:'Máy này',role:'admin'};
     const area=document.querySelector('#account-tools');
-    if(area){const label=document.createElement('span');label.textContent=auth.user.username;area.append(label);
+    if(area&&!data.enabled){area.hidden=true;area.replaceChildren();}
+    if(area&&data.enabled){const label=document.createElement('span');label.textContent=auth.user.username;area.append(label);
       if(data.enabled){const link=document.createElement('a');link.href='/account';link.textContent='Tài khoản';area.append(link);const button=document.createElement('button');button.textContent='Đăng xuất';button.className='quiet';button.onclick=async()=>{await request('logout',{});location.assign('/login');};area.append(button);}
     }
     return true;

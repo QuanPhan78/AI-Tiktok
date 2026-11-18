@@ -1,12 +1,14 @@
 # Duyệt video, kết nối TikTok và lập lịch
 
-Content Studio có tài khoản riêng, đăng nhập bằng mật khẩu, kết nối TikTok qua OAuth và bộ xử lý lịch lưu bền vững. MP4 phải được duyệt đúng phiên bản trước khi đăng. Người mới dùng duyệt trên web; dữ liệu dự án đã bàn giao Notion tiếp tục dùng quyết định Telegram.
+Cách khởi động thống nhất và sao lưu: [Content Studio cá nhân](PERSONAL_STUDIO.md). Video thường từ quy trình 7 bước có thể đăng khi đủ quyền; Video TikTok Shop chỉ tạo/xuất/duyệt, chưa đăng tự động.
+
+Content Studio dùng cá nhân trên máy, không cần tài khoản Studio, đăng ký hay mật khẩu. Kết nối TikTok qua OAuth và bộ xử lý lịch vẫn được giữ. MP4 phải được duyệt đúng phiên bản trước khi đăng. Người mới dùng duyệt trên web; dữ liệu dự án đã bàn giao Notion tiếp tục dùng quyết định Telegram.
 
 **Trạng thái triển khai:** phần Automation của Long đã nằm trong `main` và được nối với giao diện v2. Đã tìm thấy và dùng lại cấu hình ứng dụng TikTok của dự án trên máy nghiệm thu. Bản ghi kết nối cũ từng có `video.publish`, nhưng access token đã hết hạn; chưa xác nhận quyền hiện tại, OAuth v2 hoặc đăng thật. Xem [biên bản đối chiếu tích hợp](TIKTOK_INTEGRATION_STATUS.md). Chưa tích hợp TikTok Shop; SEJOY r26 có lời kêu gọi giỏ hàng vẫn được giữ để đối chiếu, không tự đăng qua luồng video thường.
 
 ## 1. Dùng trên giao diện
 
-1. Đăng nhập. Mỗi người chỉ thấy phiên, ảnh, ZIP, MP4, chat, tài khoản TikTok và lịch của mình.
+1. Mở http://127.0.0.1:8001/app và dùng ngay. Các phiên, ảnh, ZIP, MP4, chat và lịch được lưu trên máy này. Trang đăng nhập/tài khoản cũ tự quay về ứng dụng.
 2. Với phiên ở Bước 7, tải MP4 lên rồi bấm **Duyệt và chuẩn bị đăng TikTok**. Bấm **Kiểm tra và đồng bộ MP4**; xem hết video. Phiên SEJOY đã gửi Telegram dùng quyết định từ đúng tin duyệt. Phiên khác có nút **Duyệt video này** / **Video cần sửa** trên web.
 3. Với video thường đã hoàn chỉnh, mở **Lịch đăng và TikTok**, nhập caption và **Tải video thường lên**. Video này được quản lý riêng; không sửa kịch bản SEJOY. Có thể mở lại video đã tải trong danh sách này.
 4. Bấm **Kết nối tài khoản TikTok**. TikTok hỏi quyền; Content Studio không hỏi mật khẩu TikTok. Sau khi quay về, chọn đúng tài khoản, đọc tên và thời lượng được phép.
@@ -20,9 +22,9 @@ Mục **Tài khoản TikTok** hiển thị từng điều kiện còn thiếu, c
 
 ## 2. Chạy trên máy và Docker
 
-Không mua gói dịch vụ trong quy trình này. Bắt đầu bằng localhost; chỉ mở HTTPS sau khi cấu hình bảo mật và tài khoản quản trị. Các cổng vẫn là web **8001**, Automation **8000**, n8n **5678**; gateway công khai mới **8080**. Cổng Docker chỉ bind `127.0.0.1`.
+Không mua gói dịch vụ trong quy trình này. Giao diện chỉ mở trên localhost; HTTPS chỉ dành cho callback TikTok, MP4 có liên kết ký và webhook Telegram. Các cổng vẫn là web **8001**, Automation **8000**, n8n **5678**; gateway công khai mới **8080**. Cổng Docker chỉ bind `127.0.0.1`.
 
-Từ gốc repo, cài môi trường theo README. Trong `.env`, đặt `STUDIO_AUTH_ENABLED=1`, khởi động web rồi mở `/login` **trực tiếp trên localhost**. Tài khoản đầu là quản trị và nhận quyền sở hữu dữ liệu cũ, không viết lại JSON/bundle đã duyệt. Lưu mã khôi phục ở nơi riêng. Người dùng tiếp theo dùng Đăng ký; mã khôi phục chỉ dùng một lần và đổi sau khi khôi phục. Trang **Tài khoản** cho đổi mật khẩu, xóa dữ liệu tài khoản thường; tài khoản quản trị dự án phải chuyển giao riêng trước khi xóa.
+Từ gốc repo, cài môi trường theo README. Trong `.env`, dùng `STUDIO_AUTH_ENABLED=0`, `STUDIO_LOCAL_ONLY=1`, `STUDIO_PUBLIC_MODE=0`. Mở `/app` trực tiếp trên localhost. Không có bước tạo quản trị. Không dùng cấu hình này để mở giao diện chỉnh sửa cho người ngoài qua Internet.
 
 Muốn chạy cả web trong Docker, từ `integrations/long-v2`:
 
@@ -35,16 +37,16 @@ docker compose -f docker-compose.yml -f docker-compose.public.yml up -d --build
 
 Chỉ chạy một bản web ghi vào cùng database. Dừng bản Python ở cổng 8001 trước khi chuyển sang container. Giữ **cùng tên project Compose và volume** khi nâng cấp hệ thống cũ. Không chạy `down -v`. Ảnh có đường dẫn Windows cũ được đọc từ thư mục `assets` cùng volume khi chạy Linux; không thay bundle/hash.
 
-`docker-compose.public.yml` bật đăng nhập, chặn API v1 trên public web. Thiết lập quản trị chỉ qua cổng localhost 8001; gateway chặn `/api/v2/auth/setup`. n8n và API nội bộ không mở ra Internet. Có thể tiếp tục gateway webhook cũ ở 5679 cho Telegram.
+`docker-compose.public.yml` chạy Studio cá nhân tại 8001. Gateway 8080 chỉ cho `/api/v2/tiktok/callback`, `/media/tiktok/`, file xác minh `tiktok*.txt`, `/policy` và webhook Telegram v2. `/app`, trang tài khoản và các API chỉnh sửa bị chặn trên gateway; n8n và API nội bộ không mở ra Internet. Dùng cùng tên miền ngrok qua gateway 8080 cho Telegram. Chỉ ngừng đường cũ sau khi webhook mới được kiểm tra; không mở hai tunnel mới.
 
 ## 3. Dùng lại ứng dụng TikTok của dự án
 
-Kiểm tra ứng dụng Long đã dùng trước; không cần tạo một ứng dụng Developer khác chỉ vì đổi giao diện sang Content Studio. Người quản lý ứng dụng xác nhận đúng dự án, quyền sử dụng, Login Kit, Direct Post và `video.publish`. Dùng cặp `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` của ứng dụng đó trong `.env` của Automation; không ghi khóa vào source hay chat. Giữ cấu hình v1 còn sử dụng. Không sao chép token tài khoản dùng chung từ bảng Notion v1 vào các tài khoản web: mỗi người tự kết nối qua OAuth v2.
+Kiểm tra ứng dụng Long đã dùng trước; không cần tạo một ứng dụng Developer khác chỉ vì đổi giao diện sang Content Studio. Người quản lý ứng dụng xác nhận đúng dự án, quyền sử dụng, Login Kit, Direct Post và `video.publish`. Dùng cặp `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` của ứng dụng đó trong `.env` của Automation; không ghi khóa vào source hay chat. Giữ cấu hình v1 còn sử dụng. Không sao chép token tài khoản dùng chung từ bảng Notion v1 vào các kết nối mới: chủ tài khoản tự cấp quyền qua OAuth v2.
 
 Chỉ xem xét ứng dụng mới nếu ứng dụng hiện có không thể dùng cho dự án. Việc có source hoặc khóa không chứng minh ứng dụng đã được audit. Khi triển khai Direct Post công khai, ứng dụng cần đáp ứng yêu cầu dành cho nhiều người dùng, không chỉ công cụ nội bộ. [Hướng dẫn chính thức](https://developers.tiktok.com/docs/en/content-sharing-guidelines).
 
 1. Dùng tên miền HTTPS cố định của gói miễn phí đang có, trỏ tunnel tới gateway **8080**. Ví dụ `ngrok http 8080 --url=TEN-MIEN-MIEN-PHI-CUA-BAN`. Không đăng ký gói trả phí. Kiểm tra hạn mức gói; nếu hết, dừng và thử lại sau.
-2. Điền `STUDIO_PUBLIC_URL=https://...` không có đường dẫn; `TIKTOK_V2_REDIRECT_URI` phải đúng URL đó cộng `/api/v2/tiktok/callback`. Thêm chính xác callback này trong cùng ứng dụng TikTok, giữ callback v1 nếu còn dùng. Đặt cùng URL cho web/Automation. Khai báo chính sách `/policy` và địa chỉ hỗ trợ `STUDIO_SUPPORT_CONTACT` trước khi mở đăng ký công khai.
+2. Điền `STUDIO_PUBLIC_URL=https://...` không có đường dẫn; `TIKTOK_V2_REDIRECT_URI` phải đúng URL đó cộng `/api/v2/tiktok/callback`. Thêm chính xác callback này trong cùng ứng dụng TikTok, giữ callback v1 nếu còn dùng. Đặt cùng URL cho web/Automation. Callback trả liên kết về ứng dụng trên localhost. Không dùng link HTTPS để mở giao diện Studio.
 3. Giữ khóa Fernet `TIKTOK_TOKEN_ENCRYPTION_KEY` đã có. Chỉ khi chưa có khóa mã hóa và chưa lưu kết nối nào mới tạo bằng lệnh dưới; lưu cùng bản sao lưu, không thay khóa đang dùng:
 
 ```powershell
@@ -63,7 +65,7 @@ Video trên máy chủ được TikTok lấy bằng `PULL_FROM_URL` qua URL ký 
 
 Import [Content Studio - Publishing Scheduler v2](../integrations/long-v2/n8n/Content%20Studio%20-%20Publishing%20Scheduler%20v2.json). Trong node **Process owned schedules**, chọn Header Auth với tên header `X-Content-Token`, giá trị bằng `WEBHOOK_V2_TOKEN`. Lưu credential trong n8n rồi bật workflow. Workflow chạy mỗi phút, gọi API nội bộ; không có khóa trong file JSON.
 
-Không bật lại các workflow lập lịch/đăng/retry **v1** cho cùng dữ liệu v2. V2 dùng `publications.sqlite3` trong volume Automation; Notion là bản đối chiếu của SEJOY, không phải hàng đợi chính. Workflow cũ vẫn giữ trong source để tương thích các hệ thống v1 riêng.
+Không bật lại các workflow lập lịch/đăng/retry **v1** cho cùng dữ liệu v2. V2 dùng `publications.sqlite3` trong volume Automation; Notion là bản đối chiếu nội dung và kết quả, không phải hàng đợi chính. Workflow cũ vẫn giữ trong source để tương thích các hệ thống v1 riêng.
 
 Đặt `TIKTOK_SCHEDULER_ENABLED=0` sẽ dừng gửi bài mới. Giữ workflow v2 chạy để tiếp tục đọc kết quả những bài TikTok đã nhận và thử lại đồng bộ Notion. Một workflow chạy thành công khi bộ xử lý tắt không phải bằng chứng đã đăng bài. Lịch lỗi có lượt thay thế không được bật lại để tạo hai bài cùng video/tài khoản.
 
@@ -85,4 +87,4 @@ Chạy `python scripts/verify.py` trong môi trường đã cài requirements-te
 
 Nghiệm thu thật sau khi đủ quyền: dùng MP4 tổng hợp không có yêu cầu giỏ hàng, kết nối tài khoản thử riêng tư; một lượt **Đăng ngay** và một lượt **Đặt lịch**. Lưu biên nhận thực tế, trạng thái cuối và mã bài nếu TikTok trả. Thử khởi động lại dịch vụ để đọc lại lịch. Không đánh dấu hoàn thành nghiệm thu chỉ vì kiểm thử giả lập đạt.
 
-Trước khi mở cho nhiều người: kiểm tra HTTPS, đăng ký/đăng nhập/khôi phục/xóa dữ liệu, địa chỉ hỗ trợ, giới hạn dung lượng và sao lưu **cả** dữ liệu Studio, volume Automation/n8n và khóa mã hóa. Người quản lý kiểm soát quyền truy cập máy chủ; xóa tài khoản không xóa bài đã đăng TikTok hoặc bản sao lưu quản trị trước đó. Chưa có giới hạn tổng dung lượng từng người, nên triển khai theo nhóm thử nhỏ trong giai đoạn nghiệm thu.
+Bản này dành cho một máy và không có đăng ký công khai. Sao lưu cả dữ liệu Studio, volume Automation/n8n và cấu hình riêng trước khi làm sạch dữ liệu. Giữ các khóa dịch vụ, khóa mã hóa, workflow và credential n8n. Bản sao lưu nằm ngoài thư mục dữ liệu đang dùng và ngoài Git. Làm sạch trên máy không xóa trang Notion, tin Telegram hoặc bài TikTok đã có. Sau khi làm sạch, tạo phiên mới và duyệt lại video trước khi đăng.

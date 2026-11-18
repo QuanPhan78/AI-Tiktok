@@ -47,7 +47,11 @@ def next_step(s):
     state = video.get("status")
     prefix = f"Theo dữ liệu đã lưu: bộ prompt r{revision}, MP4 v{video['version']}. "
     if state == "APPROVED":
-        return prefix + "Video đã duyệt. Chuẩn bị caption, hashtag đã chốt và lịch đăng; đăng hoặc lên lịch trên TikTok rồi lưu link bài. Không cần tạo lại hoặc gửi duyệt lại nếu không thay nội dung/video. Chưa có bằng chứng bài đã đăng trong dữ liệu này."
+        if s.get('content_mode', 'tiktok_shop') == 'ordinary':
+            action = "Mở Đăng TikTok, kiểm tra tài khoản, caption, hashtag và giờ đăng. Chỉ gửi khi đã đủ quyền và cấu hình; lượt nghiệm thu chọn Chỉ mình tôi."
+        else:
+            action = "Đây là Video TikTok Shop, chưa hỗ trợ đăng tự động. Dùng MP4 và nội dung đã duyệt để thao tác trực tiếp trên TikTok."
+        return prefix + "Video đã duyệt. " + action + " Không cần tạo lại hoặc gửi duyệt lại nếu không thay nội dung/video. Chưa có bằng chứng bài đã đăng trong dữ liệu này."
     if state == "PENDING_REVIEW":
         return prefix + "Video đang chờ duyệt. Xem tin duyệt trên Telegram rồi bấm Cập nhật trạng thái duyệt ở Bước 7."
     if state == "NEEDS_REVISION":
@@ -64,7 +68,7 @@ def sources_for(s):
     raw = {
         "session": ("Bước và phiên bản hiện tại", {"step": s["step"], "revision": s["revision"],
                     "bundle_revision": bundle.get("revision"), "status": s["status"], "updated_at": s["updated_at"]}),
-        "product": ("Thông tin sản phẩm", {"approval": "đã duyệt bước 1" if "1" in approved else "chưa duyệt bước 1",
+        "product": ("Thông tin sản phẩm", {"content_mode": s.get("content_mode", "tiktok_shop"), "approval": "đã duyệt bước 1" if "1" in approved else "chưa duyệt bước 1",
                     **{k: s["product"].get(k) for k in ("name", "uses", "price", "product_link")}}),
         "character": ("Nhân vật và giọng", {k: char.get(k) for k in ("id", "name", "voice", "setting", "outfit")}),
         "plan": ("Kế hoạch cảnh đã duyệt", approved.get("4")),

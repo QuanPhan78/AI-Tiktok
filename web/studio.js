@@ -2,10 +2,19 @@
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const names = ['Sản phẩm','Tình huống','Nhân vật','Kế hoạch cảnh','Lời thoại','Tổng hợp','Tạo và duyệt video'];
+const modeLabel = s => s?.content_mode === 'ordinary' ? 'Video thường' : 'Video TikTok Shop';
 const stateNames = {awaiting_input:'Chờ tạo bản nháp',awaiting_approval:'Chờ bạn duyệt',processing:'Đang xử lý',ready:'Đã chốt bộ prompt',needs_changes:'Cần chỉnh sửa',error:'Chưa hoàn tất'};
 let session = null, library = [], poll = null, busy = false, renderedStep = '', outcomeSection = '';
 const geminiOrigin = 'http://127.0.0.1:8001';
 let geminiSelection = null;
+async function refreshExternalStatus() {
+  const element = document.getElementById('external-status');
+  if (!element) return;
+  try { element.textContent = (await api('/external-status')).message; }
+  catch { element.textContent = 'Chưa đọc được kết nối ngoài máy. Kiểm tra hệ thống trước khi gửi Telegram hoặc TikTok.'; }
+}
+setInterval(refreshExternalStatus, 60000);
+refreshExternalStatus();
 async function api(path, options={}) {
   const r = await fetch('/api/v2'+path, options);
   const d = await r.json();
@@ -218,11 +227,19 @@ function context() {
   const p=session.product,c=session.approved['3']?.character;
   return `<div class="eyebrow">SẢN PHẨM ĐANG LÀM</div>${p.asset_id?`<img class="thumb" src="/api/v2/assets/${encodeURIComponent(p.asset_id)}" alt="Ảnh sản phẩm">`:''}<h3>${esc(p.name)}</h3><p>${esc(p.uses)}</p><b>${esc(p.price)}</b><p><a href="${esc(p.product_link)}" target="_blank" rel="noopener noreferrer">Xem sản phẩm ↗</a></p>${c?`<hr><div class="eyebrow">NHÂN VẬT ĐÃ CHỌN</div><img class="thumb portrait" src="${c.asset_id?'/api/v2/assets/'+encodeURIComponent(c.asset_id):'/api/v2/characters/'+c.id+'/image'}" alt="${esc(c.name)}"><h3>${esc(c.id)} · ${esc(c.name)}</h3><p>${esc(c.voice)}</p>`:''}<hr><p>Đã xong: ${Object.keys(session.approved).join(', ')||'Chưa có bước nào'}${session.step < 7 ? `<br>Đang chờ: ${esc(session.pending_action)}` : ''}</p><small>Mã: ${esc(session.request_id)}<br>Phiên bản: ${session.revision}</small>`;
 }
-function productForm(p={}) {
-  return `${text('product-name','Tên sản phẩm',p.name,'required maxlength="300"')}${area('product-uses','Công dụng đã xác nhận',p.uses)}<div class="grid2">${text('product-price','Giá (giữ nguyên cách ghi)',p.price,'required')}${text('product-link','Link sản phẩm',p.product_link,'type="url" required')}</div><label for="product-image">Ảnh sản phẩm${p.asset_id?' · Đã có ảnh, chỉ chọn nếu muốn thay':''}</label><input id="product-image" type="file" accept="image/png,image/jpeg,image/webp"><p class="helper">PNG, JPEG hoặc WebP · tối đa 10 MB. Thông tin và ảnh này sẽ được dùng trong bộ bàn giao.</p>`;
+function productForm(p={}, mode='ordinary') {
+  return `<label for="content-mode">Loại nội dung</label><select id="content-mode"><option value="ordinary" ${mode==='ordinary'?'selected':''}>Video thường</option><option value="tiktok_shop" ${mode==='tiktok_shop'?'selected':''}>Video TikTok Shop</option></select><p class="helper">Video thường có lời kết do bạn duyệt. TikTok Shop giữ câu chốt của Bảo, chưa hỗ trợ đăng tự động. Đổi loại cần duyệt lại từ Bước 1.</p>${text('product-name','Tên sản phẩm',p.name,'required maxlength="300"')}${area('product-uses','Công dụng đã xác nhận',p.uses)}<div class="grid2">${text('product-price','Giá (giữ nguyên cách ghi)',p.price,'required')}${text('product-link','Link sản phẩm',p.product_link,'type="url" required')}</div><label for="product-image">Ảnh sản phẩm${p.asset_id?' · Đã có ảnh, chỉ chọn nếu muốn thay':''}</label><input id="product-image" type="file" accept="image/png,image/jpeg,image/webp"><p class="helper">PNG, JPEG hoặc WebP · tối đa 10 MB. Thông tin và ảnh này sẽ được dùng trong bộ bàn giao.</p>`;
 }
 async function refreshList() {
   const list = await api('/sessions');
+  if (!list.length && !window.StudioAuth?.enabled) {
+    try {
+      localStorage.removeItem('studio-session');
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith('studio-chat-draft:')) localStorage.removeItem(key);
+      }
+    } catch {}
+  }
   $('#sessions').innerHTML=list.length?list.map(s=>`<button data-session="${s.id}" class="${session?.id===s.id?'active':''}">${esc(s.product.name)}<small>Bước ${s.step}/7 · ${esc(stateNames[s.status]||s.status)}</small></button>`).join(''):'<p class="helper" style="padding:12px">Chưa có phiên nào.<br>Tạo nội dung đầu tiên của bạn.</p>';
 }
 async function openSession(id) {
@@ -263,7 +280,7 @@ function render() {
   if (stepKey!==renderedStep) { window.scrollTo(0,0); renderedStep=stepKey; }
   $('#context').innerHTML=context(); $('#history').hidden=!session;
   $('#page-title').textContent=session?session.product.name:'Từ sản phẩm đến câu chuyện';
-  $('#subtitle').textContent=session?`Bước ${session.step}/7 · ${names[session.step-1]}`:'Bảy bước để chuẩn bị một bộ prompt nhất quán, sẵn sàng bàn giao.';
+  $('#subtitle').textContent=session?`Bước ${session.step}/7 · ${names[session.step-1]} · ${modeLabel(session)}`:'Bảy bước để chuẩn bị một bộ prompt nhất quán, sẵn sàng bàn giao.';
   $('#steps').innerHTML=names.map((n,i)=>`<li><button data-step="${i+1}" class="${session?.step===i+1?'current':session?.step>i+1?'done':''}" ${!session||i+1>=session.step||session.status==='processing'?'disabled':''}><b>${session?.step>i+1?'✓':i+1}</b>${n}</button></li>`).join('');
   const editor=$('#editor');
   if(!session){editor.innerHTML=`<span class="status">BẮT ĐẦU MỘT CÂU CHUYỆN</span><h2>Sản phẩm của bạn là gì?</h2><p class="helper">Cung cấp thông tin chắc chắn. Mọi gợi ý bổ sung đều chờ bạn xác nhận.</p><form id="create-form">${productForm()}<div class="actions"><button class="primary" type="submit">Tạo phiên làm việc →</button></div></form>`;return;}
@@ -275,7 +292,7 @@ function render() {
     if(step<7)for(const w of s.warnings||[])html+=`<div class="message">${esc(w)}</div>`;
   }
   if(step===1){
-    html+=`<details><summary>Sửa thông tin đầu vào hoặc thay ảnh</summary>${productForm(s.product)}<button id="save-product" style="margin-top:16px">Lưu thông tin đầu vào</button></details>`;
+    html+=`<details><summary>Sửa thông tin đầu vào hoặc thay ảnh</summary>${productForm(s.product,s.content_mode||'tiktok_shop')}<button id="save-product" style="margin-top:16px">Lưu thông tin đầu vào</button></details>`;
     if(d)html+=`<p class="helper">${esc(d.link_read?.message||'Thông tin do người dùng nhập.')}</p>${area('summary','Tóm tắt sản phẩm',d.summary)}${area('description-en','Mô tả sản phẩm bằng tiếng Anh (dùng trong prompt)',d.product_description_en)}${area('suggestions','Bổ sung cần bạn kiểm tra (mỗi dòng một ý)',d.suggestions.join('\n'))}<label class="check"><input type="checkbox" id="confirm-facts">Tôi đã kiểm tra tóm tắt và các thông tin bổ sung ở trên.</label>`;
   } else if(step===2&&d){
     html+=`<p>Chọn hoàn cảnh kể chuyện phù hợp nhất với sản phẩm.</p><div class="choices">${d.items.map((x,i)=>`<label class="choice"><input name="situation" type="radio" value="${i}" ${i===0?'checked':''}><b>${i+1}. ${esc(x.title)}</b><small>${esc(x.reason)} · ${esc(x.emotion)}</small></label>`).join('')}</div>${text('custom-situation','Hoặc nhập tình huống của riêng bạn')}`;
@@ -290,7 +307,7 @@ function render() {
     html+=`<p class="helper">Đã duyệt ${Object.keys(s.dialogues).length} cảnh. Các lời thoại đã chốt được giữ nguyên.</p><h3>Cảnh ${scene.id} · ${esc(scene.part)}</h3><p>${esc(scene.action_vi)}</p>`;
     if(d)html+=area('dialogue','Lời thoại đang chờ duyệt',d.text)+'<p class="helper" id="dialogue-count" aria-live="polite"></p>';
   } else if(step===6&&d){
-    html+='<h3>Bảng 1 · Lời thoại đã chốt</h3><table><thead><tr><th>Cảnh</th><th>Phần</th><th>Lời thoại</th></tr></thead><tbody>'+a['4'].scenes.map(x=>`<tr id="dialogue-row-${x.id}"><td>${x.id}</td><td>${esc(x.part)}</td><td>${esc(s.dialogues[x.id])}${x.id!=='4'?`<br><button class="quiet" data-dialogue="${x.id}">Sửa lời thoại cảnh này</button>`:''}</td></tr>`).join('')+'</tbody></table>';
+    html+='<h3>Bảng 1 · Lời thoại đã chốt</h3><table><thead><tr><th>Cảnh</th><th>Phần</th><th>Lời thoại</th></tr></thead><tbody>'+a['4'].scenes.map(x=>`<tr id="dialogue-row-${x.id}"><td>${x.id}</td><td>${esc(x.part)}</td><td>${esc(s.dialogues[x.id])}${x.id!=='4'||s.content_mode==='ordinary'?`<br><button class="quiet" data-dialogue="${x.id}">Sửa lời thoại cảnh này</button>`:''}</td></tr>`).join('')+'</tbody></table>';
     html+=`<h3>Bảng 2 · Nội dung để dựng và đăng bài</h3><table><tbody><tr><th>Slogan</th><td>${area('slogans','5 slogan, mỗi dòng một câu',d.slogans.join('\n'))}</td></tr><tr><th>Caption</th><td>${d.captions.map((c,i)=>area('caption-'+i,'Caption '+(i+1),c)).join('')}<label for="selected-caption">Caption dùng để bàn giao</label><select id="selected-caption">${d.captions.map((_,i)=>`<option value="${i}" ${i===d.selected_caption?'selected':''}>Caption ${i+1}</option>`).join('')}</select></td></tr><tr><th>Hashtag</th><td>${area('hashtags','8–10 hashtag',d.hashtags.join(' '))}</td></tr><tr><th>Bình luận ghim</th><td>${area('pinned','Giữ nguyên link sản phẩm',d.pinned_comment)}</td></tr><tr><th>Chữ thêm khi dựng</th><td>${text('overlay2','Cảnh 2 · tên và công dụng ngắn',d.overlay_scene2)}${text('overlay4','Cảnh cuối · giá',d.overlay_scene4,'readonly')}</td></tr></tbody></table><p class="helper">Chốt sẽ kiểm tra toàn bộ nội dung trước khi xuất prompt. Lời thoại đã duyệt được giữ nguyên.</p>`;
   } else if(step===7){
     const b=s.bundle;
@@ -343,10 +360,10 @@ document.addEventListener('click',async e=>{
     if(b.id==='attach-video')await attachVideo();
     if(b.id==='submit-video-review')await action('submit_video_review',{version:session.video.version});
     if(b.id==='refresh-video-review')await action('refresh_video_review',{version:session.video.version});
-    if(b.id==='save-product'){const image=await upload($('#product-image'));await action('revise',{product:{name:val('product-name'),uses:val('product-uses'),price:val('product-price'),product_link:val('product-link'),asset_id:image||session.product.asset_id}});}
+    if(b.id==='save-product'){const image=await upload($('#product-image'));await action('revise',{content_mode:val('content-mode'),product:{name:val('product-name'),uses:val('product-uses'),price:val('product-price'),product_link:val('product-link'),asset_id:image||session.product.asset_id}});}
     if(b.id==='history'){const events=await api(`/sessions/${session.id}/history`);$('#history-body').innerHTML=events.length?events.map(x=>`<div class="history-row"><b>${esc(x.operation.action)} · Bước ${x.snapshot.step}</b><br>${esc(new Date(x.created).toLocaleString('vi-VN'))} · phiên bản ${x.snapshot.revision}<details><summary>Xem nội dung đã lưu</summary><pre style="white-space:pre-wrap">${esc(JSON.stringify(x.snapshot,null,2))}</pre></details></div>`).join(''):'Chưa có thao tác nào.';$('#history-dialog').showModal();}
     if(b.id==='close-history')$('#history-dialog').close();
   }catch(err){notice(err.message);revealOutcome();}
 });
-document.addEventListener('submit',async e=>{if(e.target.id!=='create-form')return;e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;notice();try{const asset_id=await upload($('#product-image'));session=await api('/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:val('product-name'),uses:val('product-uses'),price:val('product-price'),product_link:val('product-link'),asset_id})});localStorage.setItem('studio-session',session.id);render();await refreshList();}catch(err){notice(err.message);b.disabled=false;}});
+document.addEventListener('submit',async e=>{if(e.target.id!=='create-form')return;e.preventDefault();const b=e.target.querySelector('button');b.disabled=true;notice();try{const asset_id=await upload($('#product-image'));session=await api('/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content_mode:val('content-mode'),name:val('product-name'),uses:val('product-uses'),price:val('product-price'),product_link:val('product-link'),asset_id})});localStorage.setItem('studio-session',session.id);render();await refreshList();}catch(err){notice(err.message);b.disabled=false;}});
 (async()=>{try{if(window.StudioAuth && !await window.StudioAuth.ready)return;library=await api('/characters');render();await refreshList();const last=localStorage.getItem('studio-session');if(last){try{await openSession(last);}catch{localStorage.removeItem('studio-session');}}}catch(e){notice(e.message);}})();

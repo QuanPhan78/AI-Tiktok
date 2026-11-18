@@ -1,6 +1,8 @@
 # Hướng dẫn Content Studio v2
 
-Quy trình đã chạy thử với SEJOY gồm duyệt prompt, tạo MP4 trong Gemini, bàn giao nội dung vào Notion và duyệt đúng MP4 qua Telegram. Người quản lý tài khoản thực hiện bước đăng hoặc lên lịch trên TikTok.
+> Cập nhật 18/11/2026: [bản cá nhân và hai loại nội dung](PERSONAL_STUDIO.md) là hướng dẫn hiện hành. Gói mới 2.1; Video thường duyệt cả lời kết, TikTok Shop giữ mẫu cũ. SEJOY r26 là bằng chứng lịch sử trong bản sao lưu, không phục hồi vào dữ liệu mới. Trạng thái nghiệm thu đăng thật xem [biên bản](TIKTOK_INTEGRATION_STATUS.md).
+
+Quy trình đã chạy thử với SEJOY gồm duyệt prompt, tạo MP4 trong Gemini, bàn giao nội dung vào Notion và duyệt đúng MP4 qua Telegram. Bản cá nhân mới có màn hình kết nối, đăng và lập lịch TikTok; lượt đăng riêng tư thực tế còn chờ quyền ứng dụng và nghiệm thu bằng video mới.
 
 ## 1. Cài và mở Content Studio
 
@@ -30,11 +32,11 @@ Mở [Content Studio](http://127.0.0.1:8001/app). Phiên, ảnh và lịch sử 
 
 | Bước | Việc cần làm |
 |---|---|
-| 1. Sản phẩm | Nhập tên, công dụng đã xác nhận, giá, link và ảnh. Kiểm tra tóm tắt trước khi duyệt. |
+| 1. Sản phẩm | Chọn Video thường hoặc Video TikTok Shop, nhập tên, công dụng đã xác nhận, giá, link và ảnh. Kiểm tra tóm tắt trước khi duyệt. |
 | 2. Tình huống | Chọn một đề xuất hoặc nhập tình huống riêng. |
 | 3. Nhân vật | Chọn nhân vật có ảnh tham chiếu hoặc thêm nhân vật mới. Chọn nói trực tiếp hoặc thuyết minh. |
 | 4. Kế hoạch cảnh | Dùng 4 cảnh hoặc tách cảnh 3 thành 3A và 3B. Duyệt hành động, cỡ cảnh và tư thế đầu, cuối để giữ mạch hình. |
-| 5. Lời thoại | Duyệt từng cảnh. Với các cảnh trước câu chốt, dùng 18–24 từ làm mục tiêu rồi kiểm tra nhịp nói khi có video. Cảnh cuối dùng câu chốt cố định. |
+| 5. Lời thoại | Video thường duyệt từng cảnh, gồm lời kết Cảnh 4; dùng 18–24 từ làm mục tiêu. TikTok Shop giữ câu chốt cố định ở Cảnh 4. Kiểm tra nhịp nói trên video thực tế. |
 | 6. Tổng hợp | Kiểm tra bảng kịch bản, chữ khi dựng, slogan, caption, hashtag và bình luận ghim. Chọn caption rồi bấm **Chốt và xuất prompt**. |
 | 7. Tạo và duyệt video | Bấm **Sao chép bộ cảnh** để chuẩn bị Notebook. Tải ZIP để lấy ảnh tham chiếu. Mở **Nội dung đăng bài** để sao chép caption, hashtag và bình luận ghim. |
 
@@ -74,6 +76,8 @@ Tại Bước 7, trong mục **Tải video lên và duyệt**, bấm **Lưu nộ
 
 ## 6. Bàn giao để đăng TikTok
 
+- **Video thường:** dùng màn hình **Đăng TikTok** trong Studio khi quyền và cấu hình đã đủ. Đợt nghiệm thu chọn **Chỉ mình tôi**, có người xem và duyệt video trước. Xem [hướng dẫn bản cá nhân](PERSONAL_STUDIO.md#kết-nối-tiktok-và-đăng-riêng-tư).
+- **TikTok Shop:** chưa hỗ trợ đăng tự động từ Studio. Các bước dưới là phương án thao tác trực tiếp trên TikTok.
 - Lấy đúng file MP4 đã được duyệt. Tại Bước 7, mở **Nội dung đăng bài** rồi bấm **Sao chép caption** và **Sao chép hashtag**.
 - Chủ tài khoản tải video lên TikTok, dán nội dung đã chọn và gắn đúng sản phẩm nếu clip kêu gọi bấm giỏ hàng. Với hình hoặc giọng nói AI chân thực, bật nhãn nội dung do AI tạo. [Hướng dẫn TikTok](https://support.tiktok.com/en/using-tiktok/creating-videos/ai-generated-content?authuser=0).
 - Đăng ngay hoặc chọn lịch theo giờ Việt Nam trên TikTok. Sau khi bài lên, ghi link vào trang Notion để đối chiếu.
@@ -93,4 +97,4 @@ Tại Bước 7, trong mục **Tải video lên và duyệt**, bấm **Lưu nộ
 
 ## Lập lịch trực tiếp trong Content Studio
 
-Bản mới có tài khoản web, duyệt video trên web, kết nối TikTok và lịch v2. Xem [hướng dẫn lập lịch và đăng TikTok](TIKTOK_PUBLISHING_V2.md). Các bước đăng thủ công ở trên vẫn dùng được khi chưa có quyền API; chưa có bằng chứng đăng thật từ luồng v2.
+Bản dùng cá nhân mở thẳng web, không cần tài khoản Studio; vẫn có duyệt video, kết nối TikTok và lịch v2. Xem [hướng dẫn lập lịch và đăng TikTok](TIKTOK_PUBLISHING_V2.md). Các bước đăng thủ công ở trên vẫn dùng được khi chưa có quyền API; chưa có bằng chứng đăng thật từ luồng v2.

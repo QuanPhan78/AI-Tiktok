@@ -18,7 +18,7 @@ function harness(fetch){
   URL,crypto:{randomUUID:()=>crypto.randomUUID()},location:{assign:()=>{}},confirm:()=>false});
  return {get,open:sid=>events.click({target:{closest:()=>({dataset:{publicationSession:sid}})}})};
 }
-const session=id=>({id,product:{name:id},video:{version:1,bundle_revision:26},bundle:{revision:26,scenes:[{dialogue_vi:'Ví dụ'}],publishing:{captions:['Bản nháp'],selected_caption:0,hashtags:[]}}});
+const session=id=>({id,content_mode:'ordinary',product:{name:id},video:{version:1,bundle_revision:26},bundle:{revision:26,scenes:[{dialogue_vi:'Ví dụ'}],publishing:{captions:['Bản nháp'],selected_caption:0,hashtags:[]}}});
 const capabilities={ready:false,scheduler_enabled:false,message:'Cần cấu hình'};
 test('late session response cannot overwrite the session selected later',async()=>{
  let finishA;const pending=new Promise(resolve=>finishA=resolve);
@@ -37,6 +37,13 @@ test('privacy has no default, interactions are unchecked, setup does not imply p
 });
 
 function buttons(element){return [element,...element.children.flatMap(buttons)].filter(x=>typeof x.onclick==='function');}
+test('Shop mode blocks both posting actions even without a cart keyword',async()=>{
+ const h=harness(url=>Promise.resolve(response(url.includes('/sessions/')?{...session('shop'),content_mode:'tiktok_shop'}:url.endsWith('/accounts')?{accounts:[],capabilities:{ready:true,scheduler_enabled:true}}:[])));
+ h.open('shop');await tick();await tick();
+ const root=h.get('#publishing-content');
+ for(const title of ['Đăng ngay','Đặt lịch đăng'])assert.equal(buttons(root).find(x=>x.textContent===title).disabled,true);
+ assert.ok(JSON.stringify(root.children).includes('chưa tích hợp TikTok Shop'));
+});
 test('connection can be enabled while posting remains blocked and reasons are visible',async()=>{
  const setup={ready:false,connect_ready:true,scheduler_enabled:false,message:'Chưa thể đăng thật',
   checks:[{id:'media',ok:false,label:'Tên miền tải MP4',action:'Xác minh tên miền trước khi đăng'}],permission_note:'Cần kết nối từng tài khoản'};

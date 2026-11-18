@@ -10,10 +10,11 @@ from knowledge_base.validator import validate_script
 from studio.ai import Gateway, GenerationError, characters
 from studio.links import read_product_link
 from studio.models import (Analysis, Situations, Recommendation, Plan, Dialogue,
-                           Publishing, Quality, Product, Character, CTA)
+                           Publishing, Quality, Product, Character, CTA, content_mode)
 from studio.output import build_bundle, character_asset
 from studio.quality import review_fields, classify_quality
 from studio.video import review_request
+from contracts.handoff_v2 import shop_reference
 
 
 def validate_copy(value):
@@ -29,7 +30,7 @@ class Studio:
         self.reader = reader or read_product_link
 
     def generate(self, kind, s, schema, **extra):
-        context = {"product": s["product"], "approved": s["approved"], "dialogues": s["dialogues"], **extra}
+        context = {"content_mode": content_mode(s), "product": s["product"], "approved": s["approved"], "dialogues": s["dialogues"], **extra}
         result = self.gateway.generate(kind, context, schema)
         value = schema.model_validate(result).model_dump()
         model = getattr(self.gateway, "last_model", None) or getattr(self.gateway, "model_name", "custom-provider")
@@ -139,18 +140,21 @@ class Studio:
                 raise ValueError("Lời thoại không được chứa link.")
             if s["product"]["price"] in text:
                 raise ValueError("Lời thoại không được chứa giá.")
+            if content_mode(s) == "ordinary" and shop_reference(text):
+                raise ValueError(f"Lời thoại cảnh {scene['id']}: Video thường không dùng lời kêu gọi giỏ hàng/TikTok Shop.")
             validate_copy({"voice_over_text": text})
             s["dialogues"][scene["id"]] = text
             s["scene_cursor"] += 1
             scenes = s["approved"]["4"]["scenes"]
-            if s["scene_cursor"] < len(scenes) - 1:
+            if s["scene_cursor"] < len(scenes) - (1 if content_mode(s) == "tiktok_shop" else 0):
                 next_id = scenes[s["scene_cursor"]]["id"]
                 old = s.get("dialogue_drafts", {}).get(next_id)
                 s["draft"] = {"text": old} if old else None
                 return
-            s["dialogues"]["4"] = CTA
+            if content_mode(s) == "tiktok_shop":
+                s["dialogues"]["4"] = CTA
+                s["warnings"] = ["Cảnh 4 dùng câu cố định; cần kiểm tra nhịp nói trong clip thật."]
             s["approved"]["5"] = dict(s["dialogues"])
-            s["warnings"] = ["Cảnh 4 dùng câu cố định; cần kiểm tra nhịp nói trong clip thật."]
         elif step == 6:
             value = Publishing.model_validate(data.get("publishing", draft)).model_dump()
             s["draft"] = value
@@ -158,7 +162,7 @@ class Studio:
                 raise ValueError("Giá hiển thị phải giữ nguyên thông tin đã nhập.")
             fields = review_fields(s, value)
             quality = self.generate("quality", s, Quality, publishing=value,
-                                    review_fields=fields, fixed_closing_line=CTA)
+                                    review_fields=fields, fixed_closing_line=CTA if content_mode(s) == "tiktok_shop" else None)
             blocking, warnings = classify_quality(quality, fields)
             quality["issues"] = [{k: v for k, v in issue.items() if k != "label"} for issue in blocking]
             quality["warnings"] = warnings
@@ -190,6 +194,12 @@ class Studio:
         step = s["step"]
         if step == 7:
             raise ValueError("Quay về bước cần chỉnh trước khi sửa.")
+        if "content_mode" in data:
+            if step != 1 or data["content_mode"] not in ("ordinary", "tiktok_shop"):
+                raise ValueError("Chỉ đổi loại nội dung tại Bước 1.")
+            if data["content_mode"] != content_mode(s):
+                self.reopen(s, {"step": 1})
+                s["content_mode"] = data["content_mode"]
         if step == 1 and "product" in data:
             s["product"] = Product.model_validate(data["product"]).model_dump()
             s["draft"] = None
@@ -218,7 +228,9 @@ class Studio:
             s["dialogue_drafts"] = {}
             s["scene_cursor"] = 0
         elif target == 5:
-            scenes = s["approved"]["4"]["scenes"][:-1]
+            scenes = s["approved"]["4"]["scenes"]
+            if content_mode(s) == "tiktok_shop":
+                scenes = scenes[:-1]
             ids = [x["id"] for x in scenes]
             sid = data.get("scene_id", ids[0])
             if sid not in ids:
@@ -241,6 +253,8 @@ class Studio:
         s.update(step=target, draft=previous, validation=[], validation_details=[], warnings=[], handoff=None)
         s.pop("bundle", None)
         s.pop("quality", None)
+        if s.get("video"):
+            s["video"]["status"] = "STALE"
 
     def handoff(self, s):
         if s["step"] != 7 or not s.get("bundle"):

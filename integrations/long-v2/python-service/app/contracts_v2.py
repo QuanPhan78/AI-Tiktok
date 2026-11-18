@@ -1,10 +1,17 @@
 """Canonical v2 wire contract. Its copy in Long's app must remain byte-identical."""
 import re
 import unicodedata
-from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing import Literal, Annotated, Union
+from pydantic import BaseModel, ConfigDict, Field, model_validator, TypeAdapter
 
 CLOSING_LINE = "Sản phẩm có ngay trên TikTok Shop, bấm vào giỏ hàng bên dưới góc trái màn hình để tham khảo sản phẩm bên chúng tôi nhé!"
+
+
+def shop_reference(text):
+    """Detect Shop references in displayed copy, never in source URLs."""
+    value = re.sub(r"https?://\S+", "", text, flags=re.I)
+    value = "".join(c for c in unicodedata.normalize("NFD", value.lower()) if not unicodedata.combining(c))
+    return bool(re.search(r"gio[\s_-]*hang|tiktok[\s_-]*shop|shopping[\s_-]*cart|product[\s_-]*basket", value))
 
 
 class Wire(BaseModel):
@@ -80,6 +87,9 @@ class HandoffV2(Wire):
     qc: QCInfo
     metadata: dict
 
+    def is_shop(self):
+        return True
+
     @model_validator(mode="after")
     def content_rules(self):
         ids = [s.id for s in self.scenes]
@@ -87,7 +97,7 @@ class HandoffV2(Wire):
             raise ValueError("Sai thứ tự cảnh.")
         if [s.order for s in self.scenes] != list(range(1, len(self.scenes) + 1)):
             raise ValueError("Sai thứ tự đánh số cảnh.")
-        if self.scenes[-1].dialogue_vi != CLOSING_LINE:
+        if self.is_shop() and self.scenes[-1].dialogue_vi != CLOSING_LINE:
             raise ValueError("Câu cuối phải giữ nguyên.")
         for scene in self.scenes:
             for value in (scene.dialogue_vi, scene.prompt_en):
@@ -101,8 +111,17 @@ class HandoffV2(Wire):
             if self.character.audio_mode == "voiceover" and '(b) "' in scene.prompt_en:
                 raise ValueError("Bản thuyết minh không chứa lời thoại trong prompt video.")
         pub = self.publishing
-        if any(len(t) > 150 or not t.endswith("Bấm giỏ hàng nhé!") for t in pub.captions):
-            raise ValueError("Caption tối đa 150 ký tự và kết thúc bằng Bấm giỏ hàng nhé!")
+        if any(len(t) > 150 or (self.is_shop() and not t.endswith("Bấm giỏ hàng nhé!")) for t in pub.captions):
+            raise ValueError("Caption tối đa 150 ký tự; bản TikTok Shop phải kết thúc bằng Bấm giỏ hàng nhé!")
+        if not self.is_shop():
+            fields = {f"scenes.{s.id}.{key}": getattr(s, key) for s in self.scenes
+                      for key in ("part", "action_vi", "dialogue_vi", "prompt_en", "overlay_text")}
+            fields.update({f"publishing.{key}.{i}": t for key in ("captions", "hashtags", "slogans")
+                           for i, t in enumerate(getattr(pub, key))})
+            fields["publishing.pinned_comment"] = pub.pinned_comment
+            for field, text in fields.items():
+                if shop_reference(text):
+                    raise ValueError(f"{field}: Video thường không dùng lời kêu gọi hoặc nội dung TikTok Shop. Hãy sửa tại bước tương ứng hoặc đổi loại ở Bước 1.")
         if any(len(t.split()) > 10 for t in pub.slogans):
             raise ValueError("Slogan tối đa 10 từ.")
         if len(set(t.lower() for t in pub.hashtags)) != len(pub.hashtags):
@@ -115,3 +134,24 @@ class HandoffV2(Wire):
         if self.scenes[-1].overlay_text != self.product.price:
             raise ValueError("Chữ giá cảnh cuối phải giữ nguyên.")
         return self
+
+
+class QCInfo21(QCInfo):
+    rules_version: Literal["content-studio-2.1"] = "content-studio-2.1"
+
+
+class HandoffV21(HandoffV2):
+    schema_version: Literal["2.1"] = "2.1"
+    content_mode: Literal["ordinary", "tiktok_shop"]
+    qc: QCInfo21
+
+    def is_shop(self):
+        return self.content_mode == "tiktok_shop"
+
+
+HandoffPayload = Annotated[Union[HandoffV2, HandoffV21], Field(discriminator="schema_version")]
+handoff_adapter = TypeAdapter(HandoffPayload)
+
+
+def parse_handoff(value):
+    return handoff_adapter.validate_python(value)

@@ -10,7 +10,7 @@ Khi hỏi tiến độ, trả lời rõ step, bundle_revision, MP4 version và s
 tạo/tải/gửi duyệt lại trừ khi người dùng muốn thay video. Không coi đã duyệt là đã đăng.
 Đây là hộp chat hỏi đáp, không có công cụ sửa phiên, duyệt, gửi hay tạo video.
 Không nói đã thực hiện hành động; hướng dẫn người dùng dùng nút thật trên web.
-Không viết lại câu chốt cố định. Yêu cầu sửa nội dung: giải thích cách về đúng bước
+Video TikTok Shop giữ câu chốt cố định. Video thường có lời kết người dùng duyệt, không bắt buộc giỏ hàng. Yêu cầu sửa nội dung: giải thích cách về đúng bước
 và duyệt lại; chưa cung cấp nút áp dụng đề xuất ở bản này.
 source_ids chỉ dùng ID nguồn có trong sources; không tự đặt URL hay ID mới.
 Diễn đạt bằng từ trên giao diện: 'bộ prompt r26', 'MP4 v1', 'đã duyệt';
@@ -25,7 +25,7 @@ STEPS = [
     "Chọn một trong bốn tình huống hoặc nhập tình huống riêng, rồi duyệt Bước 2.",
     "Chọn nhân vật và ảnh, chốt nói trực tiếp hay thuyết minh ở Bước 3.",
     "Chọn 4 hoặc 5 cảnh. Duyệt cỡ cảnh, hành động, trạng thái đầu/cuối và ánh sáng ở Bước 4.",
-    "Duyệt từng lời thoại theo thứ tự ở Bước 5. Mục tiêu 18–24 từ cho cảnh đầu; câu chốt cuối giữ bản cố định.",
+    "Duyệt từng lời thoại theo thứ tự ở Bước 5. Video thường duyệt cả lời kết Cảnh 4; TikTok Shop giữ câu chốt cố định. Mục tiêu 18–24 từ, kiểm tra lại nhịp đọc trong clip thật.",
     "Kiểm tra lời thoại và nội dung đăng bài, chọn caption rồi bấm Chốt và xuất prompt. Đọc lỗi gần nút chốt.",
     "Dùng Sao chép bộ cảnh và ZIP để chuẩn bị Gemini. Sau khi tạo và xem hết video, tải MP4 lên, lưu Notion và gửi duyệt Telegram.",
 ]

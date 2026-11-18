@@ -65,7 +65,7 @@ def setup_session(path, with_image=True):
         store.save_asset({"id": asset_id, "filename": image.name, "path": str(image), "size": len(raw),
                           "sha256": hashlib.sha256(raw).hexdigest(), "media_type": "image/png"})
     session = store.create({"name": "Hộp đựng bút (dữ liệu kiểm thử)", "uses": "Đựng bút trên bàn", "price": "59.000 đồng",
-                            "product_link": "https://example.com/test-product", "asset_id": asset_id})
+                            "product_link": "https://example.com/test-product", "asset_id": asset_id}, content_mode=None)
     return store, engine, gateway, session
 
 

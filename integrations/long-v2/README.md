@@ -140,7 +140,7 @@ $updates | Where-Object {
 ### Nối webhook HTTPS
 
 1. Tạo chuỗi bí mật ngẫu nhiên cho `TELEGRAM_WEBHOOK_SECRET`. Ví dụ dùng `[guid]::NewGuid().ToString('N')` trên máy. Lưu trong `.env` của Automation và chạy lại lệnh `docker compose … up -d` ở mục 2 để nạp các biến Telegram. `WEBHOOK_V2_TOKEN` dùng chung cho Content Studio, n8n và Automation.
-2. Import và bật [workflow duyệt MP4](n8n/Content%20Studio%20-%20Telegram%20Video%20Review%20v2.json) trong n8n. Gateway ở cổng 5679 phục vụ các đường dẫn webhook v2. Dùng URL HTTPS hướng tới gateway, chẳng hạn chạy `cloudflared tunnel --url http://127.0.0.1:5679` để thử tạm thời. Giữ tunnel chạy khi cần duyệt. Nếu URL tạm thay đổi, đăng ký lại webhook cho bot thử. [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/).
+2. Import và bật [workflow duyệt MP4](n8n/Content%20Studio%20-%20Telegram%20Video%20Review%20v2.json) trong n8n. Bản cá nhân dùng một tên miền ngrok miễn phí trỏ vào gateway **8080**, chung với callback TikTok. Dùng [lệnh khởi động thống nhất](../../docs/PERSONAL_STUDIO.md). Giữ tunnel chạy khi cần duyệt; chuyển webhook sang tên miền mới rồi kiểm tra trước khi dừng tunnel cũ. Gateway 5679 chỉ giữ để tương thích hệ thống cũ.
 3. Trong cùng cửa sổ PowerShell, dùng hàm `Invoke-BotApi` ở trên để đăng ký. Thay tên miền bằng địa chỉ HTTPS thật của gateway.
 
 ```powershell

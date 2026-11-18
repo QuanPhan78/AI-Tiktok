@@ -10,7 +10,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
 from PIL import Image
 from studio.ai import characters
-from studio.models import Action, Product, STEP_NAMES
+from studio.models import Action, Product, SessionInput, STEP_NAMES, content_mode
 from studio.output import CHAR_DIR, character_asset, markdown, notebook_markdown, build_bundle
 from studio.service import Studio
 from studio.store import Store, Conflict
@@ -105,14 +105,14 @@ def asset_file(aid: str):
 
 
 @router.post("/sessions", status_code=201)
-def create_session(product: Product):
+def create_session(product: SessionInput):
     if product.asset_id:
         auth.require_owner('asset', product.asset_id, get_store())
         try:
             get_store().asset(product.asset_id)
         except KeyError:
             raise HTTPException(400, "Ảnh sản phẩm không tồn tại.")
-    s = get_store().create(product.model_dump())
+    s = get_store().create(product.model_dump(exclude={"content_mode"}), product.content_mode)
     auth.own('session', s['id'], get_store())
     return public_session(s)
 
@@ -124,7 +124,7 @@ def list_sessions():
             rows = [json.loads(r[0]) for r in db.execute("SELECT body FROM sessions JOIN ownership ON resource=sessions.id AND kind='session' WHERE owner=? ORDER BY updated DESC LIMIT 200", (auth.current()['id'],))]
     else:
         rows = get_store().list()
-    return [{k: s[k] for k in ("id", "request_id", "revision", "step", "status", "product", "updated_at")} for s in rows]
+    return [{**{k: s[k] for k in ("id", "request_id", "revision", "step", "status", "product", "updated_at")}, "content_mode": content_mode(s)} for s in rows]
 
 
 @router.get("/sessions/{sid}")

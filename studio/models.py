@@ -27,6 +27,15 @@ class Product(StrictModel):
         return self
 
 
+class SessionInput(Product):
+    content_mode: Literal["ordinary", "tiktok_shop"] = "ordinary"
+
+
+def content_mode(session):
+    # Missing field identifies an unchanged legacy 2.0 session.
+    return session.get("content_mode", "tiktok_shop")
+
+
 class Character(StrictModel):
     id: str = Field(pattern=r"^NV[1-9][0-9]*$")
     name: str = Field(min_length=1, max_length=100)

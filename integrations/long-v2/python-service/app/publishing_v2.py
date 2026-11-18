@@ -8,6 +8,8 @@ import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
+from app.contracts_v2 import shop_reference
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
@@ -188,6 +190,7 @@ class VideoMeta(BaseModel):
     caption: str = Field(max_length=10000)
     shop_callout: bool = False
     standalone: bool = False
+    content_mode: Literal["ordinary", "tiktok_shop"] | None = None
 
 
 def probe(path):
@@ -222,6 +225,17 @@ def register_video(owner: str, metadata: str = Form(...), file: UploadFile = Fil
         meta = VideoMeta.model_validate_json(metadata)
     except ValidationError:
         raise HTTPException(422,'Thông tin MP4 chưa đúng cấu trúc.') from None
+    snapshot = handoff.folder() / f"{meta.request_id}_r{meta.revision}.json"
+    if snapshot.is_file():
+        recorded = json.loads(snapshot.read_text(encoding="utf-8"))
+        recorded_mode = recorded.get("content_mode", "tiktok_shop")
+        if meta.content_mode is not None and meta.content_mode != recorded_mode:
+            raise HTTPException(409, "Loại nội dung khác bản đã lưu vào Notion.")
+        meta.content_mode = recorded_mode
+    if meta.content_mode is None:
+        meta.content_mode = "tiktok_shop" if meta.shop_callout else "ordinary"
+    if meta.content_mode == "ordinary" and shop_reference(meta.caption):
+        raise HTTPException(422, "Caption Video thường không được chứa nội dung giỏ hàng/TikTok Shop.")
     path = handoff.folder() / (secrets.token_hex(16)+'.mp4')
     keep = False
     try:
@@ -237,6 +251,11 @@ def register_video(owner: str, metadata: str = Form(...), file: UploadFile = Fil
                 if new < old or (new == old and latest['sha256'] != meta.sha256):
                     raise HTTPException(409,'Phiên bản video cũ hoặc nội dung file đã thay đổi.')
                 if new == old:
+                    previous_meta = json.loads(latest['meta'])
+                    for key in ('content_mode', 'caption', 'shop_callout', 'standalone', 'review_mode'):
+                        default = 'ordinary' if key == 'content_mode' else False if key in ('shop_callout', 'standalone') else None
+                        if previous_meta.get(key, default) != getattr(meta, key):
+                            raise HTTPException(409, 'Cùng MP4/phiên bản nhưng thông tin đăng đã đổi. Cần duyệt bản mới.')
                     if not latest['current']:
                         raise HTTPException(409,'Video đã được mở lại để sửa. Hãy tải và duyệt phiên bản mới.')
                     if meta.review_mode=='telegram':
@@ -319,6 +338,8 @@ class PostInfo(BaseModel):
 
     @model_validator(mode='after')
     def valid(self):
+        if shop_reference(self.title):
+            raise ValueError('Chưa hỗ trợ nội dung giỏ hàng/TikTok Shop trong lượt đăng tự động.')
         if len(self.title.encode('utf-16-le'))//2 > 2200:
             raise ValueError('Caption và hashtag tối đa 2200 ký tự UTF-16.')
         if self.brand_content_toggle and self.privacy_level=='SELF_ONLY':
@@ -365,8 +386,8 @@ def create_job(owner: str, body: Publication):
     require_ready()
     if os.getenv('TIKTOK_SCHEDULER_ENABLED')!='1':
         raise HTTPException(503,'Chưa bật bộ xử lý lịch đăng trên máy chủ.')
-    if json.loads(video['meta']).get('shop_callout'):
-        raise HTTPException(409,'Bản này có lời kêu gọi bấm giỏ hàng. Chưa hỗ trợ đăng TikTok Shop; dùng MP4 thường phù hợp để nghiệm thu.')
+    if json.loads(video['meta']).get('shop_callout') or json.loads(video['meta']).get('content_mode') == 'tiktok_shop':
+        raise HTTPException(409,'Bản này là nội dung TikTok Shop. Chưa hỗ trợ đăng tự động; hãy dùng Video thường đã được duyệt.')
     info = creator(owner,body.account_id)
     validate_creator(body.post.model_dump(),info,video['duration'])
     due = time.time()

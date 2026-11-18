@@ -1,4 +1,4 @@
-# Compose with docker-compose.yml; exposes only the public web gateway.
+# Personal Studio on localhost; gateway exposes callbacks and signed media only.
 services:
   studio:
     build:
@@ -6,9 +6,10 @@ services:
     ports:
       - "127.0.0.1:8001:8001"
     environment:
-      - STUDIO_AUTH_ENABLED=1
-      - STUDIO_BOOTSTRAP_LOCAL_PROXY=1
-      - STUDIO_PUBLIC_MODE=1
+      - STUDIO_AUTH_ENABLED=0
+      - STUDIO_LOCAL_ONLY=1
+      - STUDIO_LOCAL_DOCKER=1
+      - STUDIO_PUBLIC_MODE=0
       - STUDIO_PUBLIC_URL=${STUDIO_PUBLIC_URL:-}
       - STUDIO_SUPPORT_CONTACT=${STUDIO_SUPPORT_CONTACT:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}

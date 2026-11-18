@@ -29,7 +29,7 @@ else:
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from studio.auth import middleware as account_middleware, router as account_router
+from studio.auth import middleware as account_middleware, router as account_router, local_only
 from pydantic import BaseModel
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -48,12 +48,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:8001", "http://localhost:8001"] + ([os.environ['STUDIO_PUBLIC_URL'].rstrip('/')] if os.getenv('STUDIO_PUBLIC_URL') else []),
+    allow_origins=["http://127.0.0.1:8001", "http://localhost:8001"] + ([os.environ['STUDIO_PUBLIC_URL'].rstrip('/')] if os.getenv('STUDIO_PUBLIC_URL') and not local_only() else []),
     allow_methods=["*"],
     allow_headers=["*"],
 )
 app.middleware('http')(account_middleware)
 app.include_router(account_router)
+from api.runtime import router as runtime_router
+app.include_router(runtime_router)
 
 # Luu log cac request da chay (trong RAM, du dung de test)
 _request_log: dict = {}

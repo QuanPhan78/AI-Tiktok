@@ -3,16 +3,13 @@ RUN_SERVER.PY
 =============
 Chay 1 lenh nay la xong tat ca:
   - Khoi dong FastAPI va Content Studio tren cong 8001
-  - Chi tao Ngrok khi ENABLE_NGROK=1
+  - Tunnel chi di qua gateway 8080 bang scripts/start_personal.py --tunnel
 
 Cach dung:
   python run_server.py
 """
 
 import os
-import sys
-import time
-import threading
 import uvicorn
 from dotenv import load_dotenv
 
@@ -27,40 +24,7 @@ PORT = int(os.getenv("PORT", "8001"))
 
 def start_ngrok():
     """Tao ngrok tunnel va in URL ra man hinh."""
-    try:
-        from pyngrok import ngrok, conf
-
-        # Neu co NGROK_AUTH_TOKEN thi dung, khong thi dung free tier
-        auth_token = os.getenv("NGROK_AUTH_TOKEN")
-        if auth_token:
-            conf.get_default().auth_token = auth_token
-
-        # Cho server khoi dong truoc
-        time.sleep(3)
-
-        tunnel = ngrok.connect(PORT, "http")
-        public_url = tunnel.public_url
-
-        print()
-        print("=" * 60)
-        print("NGROK TUNNEL DA SAN SANG!")
-        print("=" * 60)
-        print(f"  Local URL : http://localhost:{PORT}")
-        print(f"  Public URL: {public_url}")
-        print()
-        print("GUI URL NAY CHO LONG DE TEST:")
-        print(f"  Health check : {public_url}/health")
-        print(f"  Generate API : POST {public_url}/generate")
-        print(f"  API Docs     : {public_url}/docs")
-        print()
-        print("Nhan Ctrl+C de dung server.")
-        print("=" * 60)
-
-    except ImportError:
-        print("Chua cai pyngrok. Chay: pip install pyngrok")
-    except Exception as e:
-        print(f"Khong the khoi dong ngrok: {e}")
-        print(f"Server van chay tai: http://localhost:{PORT}")
+    print("Dùng scripts/start_personal.py --tunnel để mở gateway 8080. Không mở web chỉnh sửa qua tunnel.")
 
 
 if __name__ == "__main__":
@@ -72,8 +36,7 @@ if __name__ == "__main__":
 
     # Chay ngrok trong thread rieng de khong block server
     if os.getenv("ENABLE_NGROK", "0") == "1":
-        ngrok_thread = threading.Thread(target=start_ngrok, daemon=True)
-        ngrok_thread.start()
+        start_ngrok()
 
     # Khoi dong server chinh
     uvicorn.run(

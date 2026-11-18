@@ -79,10 +79,11 @@ def disconnect(aid: str):
 @router.get('/tiktok/callback', response_class=HTMLResponse)
 def callback(state: str='', code: str='', error: str=''):
     # Do not echo the code, state or upstream error HTML.
+    home = 'http://127.0.0.1:8001/app' if auth.local_only() else '/app'
     if error or not state or not code:
-        return HTMLResponse('<meta charset="utf-8"><p>Kết nối chưa được cấp quyền. Quay lại Content Studio và thử lại.</p><a href="/app">Mở Content Studio</a>',status_code=400)
+        return HTMLResponse(f'<meta charset="utf-8"><p>Kết nối chưa được cấp quyền. Quay lại Content Studio và thử lại.</p><a href="{home}">Mở Content Studio</a>',status_code=400)
     call('/callback','POST',{'state':state,'code':code})
-    return '<meta charset="utf-8"><p>Đã kết nối TikTok với tài khoản Content Studio của bạn.</p><a href="/app">Quay lại Content Studio</a>'
+    return f'<meta charset="utf-8"><p>Đã kết nối TikTok với Content Studio.</p><a href="{home}">Quay lại Content Studio</a>'
 
 
 @router.get('/sessions/{sid}/publication')
@@ -104,7 +105,8 @@ def register(sid: str):
         raise HTTPException(403,'Kết nối Telegram SEJOY chỉ dành cho dữ liệu của quản trị.')
     p = b['publishing']; caption = p['captions'][p['selected_caption']]+'\n'+' '.join(p['hashtags'])
     metadata = {'request_id':s['request_id'],'revision':b['revision'],'version':v['version'],'sha256':v['sha256'],
-                'review_mode':mode,'caption':caption,'shop_callout':any('giỏ hàng' in x.get('dialogue_vi','').lower() for x in b['scenes'])}
+                'review_mode':mode,'caption':caption,'content_mode':b.get('content_mode','tiktok_shop'),
+                'shop_callout':b.get('content_mode','tiktok_shop')=='tiktok_shop'}
     try:
         with store.video_path(v).open('rb') as file:
             result = call(prefix()+'/videos','POST',files={'file':('video.mp4',file,'video/mp4')},data={'metadata':json.dumps(metadata)})
@@ -150,7 +152,7 @@ def ordinary_upload(file: UploadFile=File(...), caption: str=Form(...,max_length
         except OverflowError:raise HTTPException(413,'MP4 tối đa 45 MB.') from None
         except ValueError:raise HTTPException(400,'Tệp MP4 chưa hợp lệ.') from None
         body={'request_id':'vid_'+operation_id,'revision':1,'version':1,'sha256':meta['sha256'],
-              'caption':caption,'review_mode':'web','shop_callout':False,'standalone':True}
+              'caption':caption,'review_mode':'web','shop_callout':False,'standalone':True,'content_mode':'ordinary'}
         with path.open('rb') as stream:
             result=call(prefix()+'/videos','POST',files={'file':('video.mp4',stream,'video/mp4')},data={'metadata':json.dumps(body)})
     return {**result,'caption':caption}

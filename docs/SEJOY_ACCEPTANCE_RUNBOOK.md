@@ -1,5 +1,7 @@
 # Nghiệm thu Content Studio v2 với SEJOY
 
+> Biên bản lịch sử. Ngày 18/11/2026, dữ liệu SEJOY đã được sao lưu riêng và dọn khỏi ứng dụng theo yêu cầu. Không phục hồi dữ liệu cũ vào bản cá nhân; tạo phiên **Video thường** mới theo [hướng dẫn hiện hành](PERSONAL_STUDIO.md). Kết quả bên dưới không thay thế nghiệm thu video/đăng TikTok của bản mới.
+
 Ngày 11/11/2026, phiên SEJOY đã đi qua các mốc dưới đây trên môi trường thử. Repo chứa source và hướng dẫn tái hiện. Gói prompt, MP4 và biên nhận thật lưu riêng với dữ liệu dự án.
 
 | Mốc | Kết quả đã ghi nhận |

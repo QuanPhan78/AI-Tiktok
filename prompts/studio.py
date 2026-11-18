@@ -34,3 +34,16 @@ không yêu cầu thay câu, không trừ điểm vì xưng hô, phong cách, CT
 chỉ nhắc kiểm tra tốc độ nói trong warnings. Chỉ nêu vấn đề công dụng hay lời chứng thực thiếu căn cứ
 khi trích được câu cụ thể đang xuất hiện trong nội dung. Không tuyên bố đây là phê duyệt chính thức của TikTok.""",
 }
+
+
+def task_instructions(kind, mode):
+    task = TASKS[kind]
+    if mode != "ordinary":
+        return task + "\nLoại nội dung: TikTok Shop, giữ mẫu chốt đơn của Bảo."
+    if kind == "plan":
+        task = task.replace("chốt đơn", "lời kết tự nhiên cho video thường")
+    if kind == "dialogue":
+        task += " Cảnh 4 là lời kết do bạn đề xuất để người dùng duyệt, không dẫn sang cảnh khác."
+    if kind == "publishing":
+        task = "Tạo 5 slogan tối đa 10 từ; 3 caption tự nhiên tối đa 150 ký tự; 8–10 hashtag không dấu phù hợp sản phẩm/tình huống. Bình luận ghim giữ link nguyên văn. overlay_scene2 tên và công dụng ngắn; overlay_scene4 giá nguyên văn. Không sửa lời thoại đã duyệt."
+    return task + "\nLoại nội dung: Video thường. Không nhắc giỏ hàng/TikTok Shop hoặc hashtag TikTok Shop trong lời thoại, hành động, prompt, caption, slogan hay bình luận. Cảnh cuối phải được người dùng duyệt; không dùng câu chốt cố định."

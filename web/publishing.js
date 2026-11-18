@@ -34,7 +34,7 @@
     for(const row of rows)section.append(button((row.caption||'Video không có caption').slice(0,80)+' · '+statusLabels[row.status],()=>openOrdinary(row)));
   }
   async function openOrdinary(row){
-    const token=++epoch;video=row;creatorInfo=null;pendingOperation=null;current={standalone:true,id:row.id,product:{name:'Video thường'},video:{version:row.version,bundle_revision:row.revision},bundle:{revision:row.revision,scenes:[],publishing:{captions:[row.caption],selected_caption:0,hashtags:[]}}};
+    const token=++epoch;video=row;creatorInfo=null;pendingOperation=null;current={standalone:true,content_mode:'ordinary',id:row.id,product:{name:'Video thường'},video:{version:row.version,bundle_revision:row.revision},bundle:{revision:row.revision,scenes:[],publishing:{captions:[row.caption],selected_caption:0,hashtags:[]}}};
     content.replaceChildren();msg();const section=node('section',null,'pub-card');content.append(section);section.append(node('h3','Xem và duyệt đúng video'));
     const player=node('video');player.controls=true;player.preload='metadata';player.src='/api/v2/publication-videos/'+row.id+'/file';section.append(player);
     const watched=check(section,'pub-watched','Tôi đã xem hết video, kiểm tra nội dung và quyền sử dụng.');const state=node('p',statusLabels[row.status]);section.append(state);
@@ -71,7 +71,7 @@
   }
   function renderPost(){
     const token=epoch,s=current,b=s.bundle;if(!b||!s.video)return;
-    const section=node('section',null,'pub-card');content.append(section);section.append(node('h3','Nội dung và giờ đăng'));
+    const section=node('section',null,'pub-card');content.append(section);section.append(node('h3','Nội dung và giờ đăng'),node('p',s.content_mode==='ordinary'?'Video thường':'Video TikTok Shop · Chưa hỗ trợ đăng tự động'));
     const account=field(section,'pub-account','Đăng lên tài khoản','select');option(account,'','Chọn tài khoản TikTok');for(const a of accountRows.filter(a=>a.connected))option(account,a.id,a.nickname);
     const info=node('p','Chọn tài khoản để đọc quyền đăng hiện tại.','pub-note');section.append(info);
     const title=field(section,'pub-caption','Caption và hashtag','textarea',b.publishing.captions[b.publishing.selected_caption]+'\n'+b.publishing.hashtags.join(' '));
@@ -81,8 +81,8 @@
     const disclosure=node('div');section.append(disclosure);disclosure.hidden=true;
     const branded=check(disclosure,'pub-branded','Quảng bá thương hiệu bên thứ ba / hợp tác thương hiệu'),organic=check(disclosure,'pub-organic','Quảng bá thương hiệu của tôi');
     const disclosureNote=node('p');disclosure.append(disclosureNote);
-    const shopMention=b.scenes.some(x=>(x.dialogue_vi||'').toLowerCase().includes('giỏ hàng'));
-    if(shopMention)section.append(node('p','Kịch bản hiện có lời kêu gọi bấm giỏ hàng. Đợt này chưa gắn TikTok Shop: không gửi clip đó như một bài đã có giỏ hàng. Giữ SEJOY r26 để đối chiếu; dùng video thường phù hợp để nghiệm thu.','error'));
+    const shopMention=s.content_mode!=='ordinary'||b.scenes.some(x=>(x.dialogue_vi||'').toLowerCase().includes('giỏ hàng'));
+    if(shopMention)section.append(node('p','Đây là Video TikTok Shop. Bạn vẫn có thể xuất prompt, tạo và duyệt video; chưa hỗ trợ đăng tự động vì chưa tích hợp TikTok Shop. Muốn đổi loại, quay lại Bước 1 và duyệt lại nội dung.','error'));
     const noShop=check(section,'pub-no-shop','Tôi xác nhận video thực tế và nội dung đăng không cần gắn giỏ hàng TikTok Shop.');
     const consent=check(section,'pub-consent','Tôi đồng ý gửi đúng video và nội dung này tới tài khoản đã chọn, vào thời điểm đã xác nhận.');
     const terms=check(section,'pub-terms','Tôi đồng ý Music Usage Confirmation của TikTok và Branded Content Policy nếu là nội dung hợp tác thương hiệu.');
@@ -103,10 +103,10 @@
       const encoded=JSON.stringify(body);if(pendingOperation?.encoded!==encoded)pendingOperation={encoded,id:crypto.randomUUID()};
       await api('/publications','POST',{...body,operation_id:pendingOperation.id});pendingOperation=null;msg('Đã lưu lượt đăng. TikTok chưa được coi là đã đăng cho tới khi có kết quả xác nhận.');await refreshJobs($('#publication-list'),epoch);
     }
-    const publishButtons=[button('Đăng ngay',()=>send(false),!capabilities.ready||!capabilities.scheduler_enabled),button('Đặt lịch đăng',()=>send(true),!capabilities.ready||!capabilities.scheduler_enabled)];actions.append(...publishButtons);
-    if(!capabilities.ready||!capabilities.scheduler_enabled)section.append(node('p',capabilities.message+' Video và bản nháp vẫn được giữ để tiếp tục sau.','pub-note'));
+    const publishButtons=[button('Đăng ngay',()=>send(false),shopMention||!capabilities.ready||!capabilities.scheduler_enabled),button('Đặt lịch đăng',()=>send(true),shopMention||!capabilities.ready||!capabilities.scheduler_enabled)];actions.append(...publishButtons);
+    if(shopMention||!capabilities.ready||!capabilities.scheduler_enabled)section.append(node('p',capabilities.message+' Video và bản nháp vẫn được giữ để tiếp tục sau.','pub-note'));
     function disclosureState(){disclosure.hidden=!commercial.checked;disclosureNote.textContent=branded.checked?'TikTok sẽ gắn nhãn Paid partnership. Không dùng quyền Chỉ mình tôi.':organic.checked?'TikTok sẽ gắn nhãn Promotional content.':'Chọn thương hiệu của bạn, bên thứ ba hoặc cả hai.';
-      const invalid=commercial.checked&&(!branded.checked&&!organic.checked||branded.checked&&privacy.value==='SELF_ONLY');for(const b of publishButtons)b.disabled=!capabilities.ready||!capabilities.scheduler_enabled||invalid;
+      const invalid=commercial.checked&&(!branded.checked&&!organic.checked||branded.checked&&privacy.value==='SELF_ONLY');for(const b of publishButtons)b.disabled=shopMention||!capabilities.ready||!capabilities.scheduler_enabled||invalid;
     }commercial.onchange=branded.onchange=organic.onchange=privacy.onchange=disclosureState;
     section.append(node('p','Máy chủ cần bật và có mạng. TikTok có thể xử lý thêm sau giờ gửi. Lịch trễ quá 15 phút cần bạn xác nhận lại.','pub-note'));
   }

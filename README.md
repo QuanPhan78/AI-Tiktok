@@ -1,8 +1,11 @@
-# Content Studio v2
+# Content Studio cá nhân
+
+**[Mở hệ thống và dùng từ đầu đến đăng riêng tư](docs/PERSONAL_STUDIO.md).** Phiên mới mặc định **Video thường**, người dùng duyệt cả lời kết Cảnh 4. Chọn **Video TikTok Shop** nếu cần mẫu chốt của Bảo; loại này chưa hỗ trợ đăng tự động. Gói mới dùng schema 2.1, giữ tương thích gói 2.0.
+
 
 Content Studio giúp nhóm duyệt nội dung TikTok qua 7 bước, tạo gói prompt và ảnh tham chiếu, bàn giao nội dung vào Notion, rồi gửi đúng phiên bản MP4 để duyệt qua Telegram.
 
-**Mới: [tài khoản web, duyệt MP4, kết nối TikTok và lập lịch](docs/TIKTOK_PUBLISHING_V2.md).** Mỗi người có dữ liệu riêng. Có thể duyệt trên web, chọn tài khoản TikTok và đặt giờ Việt Nam. Phần đăng thật cần ứng dụng TikTok Developer có quyền `video.publish`; hiện chưa có bằng chứng nghiệm thu đăng thật. Dữ liệu SEJOY và luồng Telegram hiện có được giữ nguyên.
+**[Duyệt MP4, kết nối TikTok và lập lịch](docs/TIKTOK_PUBLISHING_V2.md).** Bản dùng cá nhân mở trực tiếp trên máy, không cần đăng ký, mật khẩu hay tài khoản quản trị Content Studio. Bạn vẫn kết nối TikTok để cấp quyền đăng video. Phần đăng thật cần HTTPS cho callback và MP4, quyền `video.publish` và nghiệm thu trên tài khoản thử; hiện chưa có bằng chứng đăng thật.
 
 Source nhánh `Automation` của Long đã có trong `main`. Đợt tích hợp này dùng lại ứng dụng TikTok đã bàn giao; không yêu cầu tạo ứng dụng mới ngay. Xem [đã tích hợp gì và điều kiện còn thiếu](docs/TIKTOK_INTEGRATION_STATUS.md).
 
@@ -52,7 +55,7 @@ Mở [Content Studio ở cổng 8001](http://127.0.0.1:8001/app). Docker Desktop
 
 Cấu hình thật nằm trong `.env` trên máy chạy. GitHub chứa cấu hình mẫu, dữ liệu tổng hợp và mã nguồn. Phiên làm việc, ảnh tải lên, MP4, bản xuất và biên nhận thật được lưu riêng.
 
-## Bản dùng chung và kiểm thử
+## Source hợp nhất và kiểm thử
 
 Clone nhánh `main` để có web, bộ đầu vào Notebook, tiện ích Gemini và Automation v2 trong cùng repo. Các phần tiếp tục dùng chung mã phiên, revision bundle và SHA-256 khi bàn giao. Không cần ghép file từ các nhánh cũ.
 

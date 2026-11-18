@@ -14,7 +14,7 @@ API v1 `/generate`, `/status/{request_id}` và callback cũ giữ nguyên địn
 |---|---|
 | `GET /api/v2/characters` | Danh sách nhân vật và ảnh xem trước |
 | `POST /api/v2/assets` | Tải ảnh bằng multipart field `file` |
-| `POST /api/v2/sessions` | Tạo phiên từ `name`, `uses`, `price`, `product_link`, `asset_id` |
+| `POST /api/v2/sessions` | Tạo phiên từ `name`, `uses`, `price`, `product_link`, `asset_id`, `content_mode` (mặc định `ordinary`) |
 | `GET /api/v2/sessions` | Danh sách phiên |
 | `GET /api/v2/sessions/{id}` | Toàn bộ trạng thái hiện tại |
 | `GET /api/v2/sessions/{id}/history` | Lịch sử và bản chụp trước mỗi thao tác |
@@ -63,3 +63,16 @@ Lần tải MP4 đầu tiên tạo phiên bản `v1`. Upload cùng SHA-256 giữ
 ## Kiểm thử
 
 Dùng [lệnh chạy suite và công cụ đối chiếu](SEJOY_ACCEPTANCE_RUNBOOK.md#kiểm-thử-không-dùng-dữ-liệu-thật).
+
+
+## Hai loại nội dung và schema 2.1
+
+Phiên mới lưu `content_mode: ordinary | tiktok_shop`. Gói mới có `schema_version: "2.1"`, `content_mode` bắt buộc và `qc.rules_version: "content-studio-2.1"`. Contract Studio và Automation giống từng byte; n8n truyền nguyên body cho cả 2.0/2.1. JSON lưu bền vững và các khối Notion ghi loại, revision. ZIP gồm JSON, Markdown, `gemini-notebook.md` và đúng hai ảnh.
+
+`ordinary` yêu cầu duyệt tất cả lời thoại, kể cả Cảnh 4. Kiểm tra tất cả lời thoại, hành động, prompt, chữ dựng và nội dung đăng để chặn chỉ dẫn giỏ hàng/Shop. `tiktok_shop` vẫn giữ CTA và quy tắc caption cố định. Loại Shop bị chặn ở API lập lịch dù người dùng xóa từ giỏ hàng khỏi caption màn hình đăng.
+
+Gói 2.0 thiếu content_mode được hiểu là TikTok Shop; parser giữ cấu trúc cũ, giá trị mặc định cũ và hàm canonical SHA-256 cũ. Không thêm trường vào gói đã lưu, không chuyển đổi tự động. Các phiên cũ thiếu content_mode tiếp tục xuất 2.0 cho đến khi người dùng đổi loại và duyệt lại từ đầu.
+
+Đổi loại: `reopen` với `step: 1`, sau đó `revise` với `content_mode` và `product`. Mỗi thao tác phải có revision hiện tại/operation_id. Mở lại hủy xác nhận phụ thuộc, đánh dấu MP4 cũ không còn hiện hành; API gọi prepare-edit để hủy lịch chưa gửi trước khi cho sửa. Lịch đang gửi hoặc đã đăng được bảo vệ. Lịch sử cũ vẫn đọc được.
+
+`GET /api/v2/external-status` chỉ kiểm tra gateway có trả trang chính sách đúng dấu nhận diện, có cache 30 giây và timeout 3 giây. Không dùng kết quả này thay cho OAuth, xác minh TikTok, trạng thái Telegram hay kết quả đăng. Đường này chỉ mở trên web local.

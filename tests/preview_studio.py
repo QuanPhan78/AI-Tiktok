@@ -6,7 +6,7 @@ This is not a real product acceptance or a production startup command.
 import os
 from pathlib import Path
 import uvicorn
-from tests.studio_fixtures import FakeGateway
+from tests.test_content_modes import ModeGateway as FakeGateway
 
 
 class PreviewGateway(FakeGateway):
@@ -26,6 +26,8 @@ class PreviewGateway(FakeGateway):
 if __name__ == "__main__":
     qa = Path(os.getenv("STUDIO_QA_DATA_DIR", str(Path(__file__).resolve().parents[1] / "data" / "browser-qa")))
     os.environ["STUDIO_DATA_DIR"] = str(qa)
+    os.environ["STUDIO_LOCAL_ONLY"] = "0"
+    os.environ["STUDIO_AUTH_ENABLED"] = "0"
     from api.main import app
     import api.studio as routes
     from studio.service import Studio

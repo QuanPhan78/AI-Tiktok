@@ -177,6 +177,22 @@ class PublishingTests(unittest.TestCase):
         self.assertEqual(self.http.post(self.base+'/jobs',json={**body,'post':{'title':'changed','privacy_level':'SELF_ONLY'}}).status_code,409)
         self.assertEqual(self.http.post(self.base+'/jobs',json=self.body()).status_code,409)
 
+    def test_shop_mode_cannot_be_removed_from_same_video(self):
+        changed = {**self.meta, 'content_mode': 'tiktok_shop'}
+        self.assertEqual(self.upload(changed).status_code, 409)
+        newer = self.upload({**changed, 'version': 2})
+        self.assertEqual(newer.status_code, 200, newer.text)
+        self.vid = newer.json()['id']
+        self.approve()
+        self.assertEqual(self.http.post(self.base+'/jobs', json=self.body()).status_code, 409)
+
+    def test_post_caption_cannot_add_shop_to_ordinary_video(self):
+        self.approve()
+        body = self.body()
+        body['post']['title'] = 'Bấm giỏ hàng nhé!'
+        self.assertEqual(self.http.post(self.base+'/jobs', json=body).status_code, 422)
+        self.fake.publish.assert_not_called()
+
     def test_retry_receipt_survives_paused_or_incomplete_configuration(self):
         body=self.body(); first=self.job(body)
         with patch.dict(os.environ,TIKTOK_SCHEDULER_ENABLED='0',TIKTOK_CLIENT_KEY=''):

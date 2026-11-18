@@ -72,3 +72,10 @@ class AcceptanceToolsTests(unittest.TestCase):
             report = preflight("quan")
         self.assertFalse(report["configuration_ready"])
         self.assertEqual(len(report["errors"]), 2)
+        for url, allowed in (("http://127.0.0.1:5678/webhook/v2", True),
+                             ("http://n8n:5678/webhook/v2", True),
+                             ("https://automation.example/webhook/v2", True),
+                             ("http://automation.example/webhook/v2", False)):
+            with self.subTest(url=url), patch.dict(os.environ, {
+                    "GEMINI_API_KEY": "test-key", "WEBHOOK_V2_URL": url, "WEBHOOK_V2_TOKEN": "test-token"}):
+                self.assertEqual(preflight("quan")["configuration_ready"], allowed)

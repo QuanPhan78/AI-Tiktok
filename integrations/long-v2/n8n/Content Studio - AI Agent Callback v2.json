@@ -24,7 +24,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const p = $input.first().json.body;\nif (p.schema_version !== \"2.0\" || !p.request_id || !Array.isArray(p.scenes)) throw new Error(\"Invalid Content Studio v2 payload\");\n// Preserve all versioned data, including character, scenes and publishing.\nreturn [{json:p}];"
+        "jsCode": "const p = $input.first().json.body;\nif (![\"2.0\", \"2.1\"].includes(p.schema_version) || !p.request_id || !Array.isArray(p.scenes)) throw new Error(\"Invalid Content Studio v2 payload\");\n// Preserve all versioned data, including character, scenes and publishing.\nreturn [{json:p}];"
       },
       "id": "studio-v2-preserve",
       "name": "Preserve full v2 payload",

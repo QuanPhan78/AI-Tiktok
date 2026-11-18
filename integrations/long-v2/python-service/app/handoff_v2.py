@@ -7,7 +7,7 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
-from app.contracts_v2 import HandoffV2
+from app.contracts_v2 import HandoffV2, HandoffPayload
 from app import notion_client as nc
 
 router = APIRouter(prefix="/api/v2/content", tags=["Content Studio v2"])
@@ -63,6 +63,8 @@ def paragraph(text):
 
 def blocks_for(bundle):
     result = [paragraph("Sản phẩm: " + bundle.product.name), paragraph("Nhân vật: " + bundle.character.name)]
+    if bundle.schema_version == "2.1":
+        result.append(paragraph(f"Schema 2.1 · r{bundle.revision} · " + ("Video thường" if bundle.content_mode == "ordinary" else "Video TikTok Shop")))
     for s in bundle.scenes:
         result.append(paragraph(f"CẢNH {s.id} · {s.part} · 8 giây"))
         # Separate blocks avoid rich-text array limits for long prompts.
@@ -155,7 +157,7 @@ def save_to_notion(bundle, db, receipt):
 
 
 @router.post("/ai-output")
-def receive(bundle: HandoffV2):
+def receive(bundle: HandoffPayload):
     raw = bundle.model_dump()
     digest = hashlib.sha256(canonical(raw).encode("utf-8")).hexdigest()
     with _lock:
