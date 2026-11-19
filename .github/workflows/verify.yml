@@ -34,8 +34,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: python -m pip install -r requirements-test.txt
-      - run: python scripts/verify.py
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: python -m pip install -r requirements-test.txt
+      - name: Install Windows from the clean checkout
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: .\scripts\setup_windows.ps1 -WithTests
+      - name: Verify Linux
+        if: runner.os == 'Linux'
+        run: python scripts/verify.py
+      - name: Verify Windows
+        if: runner.os == 'Windows'
+        run: .\.venv\Scripts\python.exe scripts/verify.py
       - name: Validate Compose without local secrets
         if: runner.os == 'Linux'
         run: docker compose --env-file .env.example -f docker-compose.yml -f docker-compose.acceptance.yml config --quiet

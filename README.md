@@ -1,5 +1,7 @@
 # Content Studio cá nhân
 
+**Máy mới: [Cài đặt Windows, cấu hình và kiểm tra từng bước](docs/SETUP_WINDOWS.md).** Bộ cài giữ cấu hình có sẵn; hướng dẫn bao gồm Studio, n8n, Notion, Telegram và các điều kiện đăng TikTok.
+
 **[Mở hệ thống và dùng từ đầu đến đăng riêng tư](docs/PERSONAL_STUDIO.md).** Phiên mới mặc định **Video thường**, người dùng duyệt cả lời kết Cảnh 4. Chọn **Video TikTok Shop** nếu cần mẫu chốt của Bảo; loại này chưa hỗ trợ đăng tự động. Gói mới dùng schema 2.1, giữ tương thích gói 2.0.
 
 

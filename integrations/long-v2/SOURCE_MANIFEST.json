@@ -1,10 +1,10 @@
 {
   "source_repository": "https://github.com/LongVu-AI/AI_Content_Automation",
   "description": "Content Studio v2 automation sources with versioned MP4 review through Telegram.",
-  "packaged_on": "2026-11-18",
+  "packaged_on": "2026-11-19",
   "files_sha256": {
     ".dockerignore": "94681b6ffe1eb9943434b1c42bc8f5c9d02490588517f68e3ef325e1e4accd25",
-    ".env.example": "348a6c6403f27ca095604a6150948bd6518dbcc05f5396b564c0187aaf3e3ee3",
+    ".env.example": "2cfb6ea1e2af0e488b1d67bb4bf6b2379f17fa42ccfbde94c8221b800097e874",
     "config/content-webhook.conf": "ca8661bdf84197ae12a4322570755827ee0a6add8d5f1f5a2dff3516b1e8b7b3",
     "config/studio-public.conf": "b3cb52c9c9653a0385d7b85970753b486e4abd21d9f3caaa0dfe3d0399c41c30",
     "docker-compose.acceptance.yml": "b0b76588bdb7536b4802e9e6c589adc3b2011e0d61f2694cac39365d813d4ff4",
