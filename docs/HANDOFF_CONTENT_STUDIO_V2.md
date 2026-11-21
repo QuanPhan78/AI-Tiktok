@@ -2,7 +2,7 @@
 
 > Cập nhật 18/11/2026: [bản cá nhân và hai loại nội dung](PERSONAL_STUDIO.md) là hướng dẫn hiện hành. Gói mới 2.1; Video thường duyệt cả lời kết, TikTok Shop giữ mẫu cũ. SEJOY r26 là bằng chứng lịch sử trong bản sao lưu, không phục hồi vào dữ liệu mới. Trạng thái nghiệm thu đăng thật xem [biên bản](TIKTOK_INTEGRATION_STATUS.md).
 
-Quy trình đã chạy thử với SEJOY gồm duyệt prompt, tạo MP4 trong Gemini, bàn giao nội dung vào Notion và duyệt đúng MP4 qua Telegram. Bản cá nhân có màn hình kết nối, đăng và lập lịch TikTok. Ngày 21/11/2026, TikTok đã xác nhận thành công hai lượt riêng tư bằng MP4 tải sẵn và được người dùng duyệt trên web: Đăng ngay và Đặt lịch. Kết quả đối chiếu xem [biên bản tích hợp](TIKTOK_INTEGRATION_STATUS.md).
+Quy trình đã chạy thử với SEJOY gồm duyệt prompt, tạo MP4 trong Gemini, bàn giao nội dung vào Notion và duyệt đúng MP4 qua Telegram. Bản cá nhân có màn hình kết nối, đăng và lập lịch TikTok. Ngày 21/11/2026, TikTok đã xác nhận đăng hai bài riêng tư bằng MP4 tải sẵn và được người dùng duyệt trên web: Đăng ngay và Đặt lịch. Hai bài đã xuất hiện nhưng còn lỗi phát cần đối chiếu; chưa hoàn tất nghiệm thu. Kết quả kiểm tra xem [biên bản tích hợp](TIKTOK_INTEGRATION_STATUS.md).
 
 ## 1. Cài và mở Content Studio
 

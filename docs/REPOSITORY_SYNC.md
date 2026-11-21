@@ -25,7 +25,7 @@ Các nhánh cũ được giữ làm lịch sử. Không cần xóa nhánh hoặc
 
 Đã thống nhất tên thao tác trên web, hướng dẫn và tiện ích. ZIP có `handoff.json`, `prompts.md`, `gemini-notebook.md` cùng hai ảnh. Endpoint xuất hỗ trợ `notebook`, đối chiếu revision để không sao chép nhầm bản. Bộ kiểm thử chung bao gồm cả kiểm tra lỗi, trùng thao tác, mất kết nối và nút Telegram của bản MP4 cũ.
 
-Pipeline v1 vẫn dùng endpoint/workflow riêng để tương thích. Workflow đăng TikTok v1 không tự nhận một MP4 v2 chỉ vì trạng thái là `APPROVED`. Content Studio gọi API v2 trong gói Automation để lập lịch và đăng; chỉ dùng workflow Publishing Scheduler v2 cho hàng đợi này. Ngày 21/11/2026 đã kết nối OAuth v2 và nhận xác nhận TikTok cho hai lượt Đăng ngay/Đặt lịch riêng tư; xem [hướng dẫn](TIKTOK_PUBLISHING_V2.md) và [biên bản đối chiếu](TIKTOK_INTEGRATION_STATUS.md).
+Pipeline v1 vẫn dùng endpoint/workflow riêng để tương thích. Workflow đăng TikTok v1 không tự nhận một MP4 v2 chỉ vì trạng thái là `APPROVED`. Content Studio gọi API v2 trong gói Automation để lập lịch và đăng; chỉ dùng workflow Publishing Scheduler v2 cho hàng đợi này. Ngày 21/11/2026 đã kết nối OAuth v2 và nhận xác nhận TikTok cho hai lượt Đăng ngay/Đặt lịch riêng tư. Hai bài xuất hiện nhưng còn lỗi phát cần đối chiếu; xem [hướng dẫn](TIKTOK_PUBLISHING_V2.md) và [biên bản đối chiếu](TIKTOK_INTEGRATION_STATUS.md).
 
 ## Cập nhật một máy đã cài
 

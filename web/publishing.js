@@ -120,7 +120,10 @@
     if(!rows.length)parent.append(node('p','Chưa có lịch đăng.'));
     for(const row of rows){const card=node('article',null,'pub-card');card.append(node('strong',statusLabels[row.status]||row.status),node('p',timeVN(row.due)+' · giờ Việt Nam'),node('p',row.post.title,'pub-title'),node('small','Mã lượt: '+row.id));if(row.error)card.append(node('p',explainError(row.error),'error'));
       card.append(node('p',`${row.account_name||'TikTok'} · r${row.video?.revision||'—'} · MP4 v${row.video?.version||'—'}`));if(row.notion_sync_error)card.append(node('p',row.notion_sync_error,'pub-note'));
-      if(row.status==='PUBLISHED')card.append(node('p',row.post.privacy_level==='SELF_ONLY'?'Bài riêng tư đã được TikTok xác nhận.':'TikTok xác nhận đã đăng; bài công khai có thể cần thêm thời gian kiểm duyệt.'));
+      if(row.status==='PUBLISHED'){
+        card.append(node('p',row.post.privacy_level==='SELF_ONLY'?'Bài riêng tư đã được TikTok xác nhận.':'TikTok xác nhận đã đăng; bài công khai có thể cần thêm thời gian kiểm duyệt.'));
+        card.append(node('p','TikTok đã xác nhận đăng. Hãy mở bài để kiểm tra hình và tiếng. Nếu bài không phát được, giữ mã lượt để đối chiếu; không tạo lượt đăng lại khi chưa rõ nguyên nhân.','pub-note'));
+      }
       if(row.post_ids?.length)card.append(node('p','Mã bài TikTok: '+row.post_ids.join(', ')));
       if(['QUEUED','SCHEDULED','MISSED','BLOCKED'].includes(row.status)){
         const when=field(card,'job-time-'+row.id,'Đổi giờ Việt Nam','datetime-local');

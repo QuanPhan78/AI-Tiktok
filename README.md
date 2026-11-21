@@ -7,7 +7,7 @@
 
 Content Studio giúp nhóm duyệt nội dung TikTok qua 7 bước, tạo gói prompt và ảnh tham chiếu, bàn giao nội dung vào Notion, rồi gửi đúng phiên bản MP4 để duyệt qua Telegram.
 
-**[Duyệt MP4, kết nối TikTok và lập lịch](docs/TIKTOK_PUBLISHING_V2.md).** Bản dùng cá nhân mở trực tiếp trên máy, không cần đăng ký, mật khẩu hay tài khoản quản trị Content Studio. Bạn vẫn kết nối TikTok để cấp quyền đăng video. Ngày 21/11/2026, TikTok đã xác nhận thành công hai lượt riêng tư: Đăng ngay và Đặt lịch; chi tiết đối chiếu xem [biên bản tích hợp](docs/TIKTOK_INTEGRATION_STATUS.md). Ứng dụng chưa audit yêu cầu tài khoản riêng tư và video chọn **Chỉ mình tôi**.
+**[Duyệt MP4, kết nối TikTok và lập lịch](docs/TIKTOK_PUBLISHING_V2.md).** Bản dùng cá nhân mở trực tiếp trên máy, không cần đăng ký, mật khẩu hay tài khoản quản trị Content Studio. Bạn vẫn kết nối TikTok để cấp quyền đăng video. Ngày 21/11/2026, TikTok đã xác nhận đăng hai bài riêng tư qua Đăng ngay và Đặt lịch; hai bài đã xuất hiện nhưng còn lỗi phát cần đối chiếu, nên nghiệm thu chưa hoàn tất. Xem [biên bản tích hợp](docs/TIKTOK_INTEGRATION_STATUS.md). Ứng dụng chưa audit yêu cầu tài khoản riêng tư và video chọn **Chỉ mình tôi**.
 
 Source nhánh `Automation` của Long đã có trong `main`. Đợt tích hợp này dùng lại ứng dụng TikTok đã bàn giao; không yêu cầu tạo ứng dụng mới ngay. Xem [đã tích hợp gì và điều kiện còn thiếu](docs/TIKTOK_INTEGRATION_STATUS.md).
 

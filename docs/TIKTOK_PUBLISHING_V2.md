@@ -4,7 +4,7 @@ Cách khởi động thống nhất và sao lưu: [Content Studio cá nhân](PER
 
 Content Studio dùng cá nhân trên máy, không cần tài khoản Studio, đăng ký hay mật khẩu. Kết nối TikTok qua OAuth và bộ xử lý lịch vẫn được giữ. MP4 phải được duyệt đúng phiên bản trước khi đăng. Người mới dùng duyệt trên web; dữ liệu dự án đã bàn giao Notion tiếp tục dùng quyết định Telegram.
 
-**Trạng thái triển khai:** phần Automation của Long đã nằm trong `main` và được nối với giao diện v2. Ngày 21/11/2026 đã kết nối OAuth v2 bằng ứng dụng của dự án, hoàn tất cấu hình URL tải MP4 và đăng thử riêng tư thành công bằng video tải sẵn. Tiến độ lượt đặt lịch và bằng chứng đối chiếu xem [biên bản tích hợp](TIKTOK_INTEGRATION_STATUS.md). Chưa tích hợp TikTok Shop; không dùng clip có lời kêu gọi giỏ hàng cho luồng video thường.
+**Trạng thái triển khai:** phần Automation của Long đã nằm trong `main` và được nối với giao diện v2. Ngày 21/11/2026 đã kết nối OAuth v2 bằng ứng dụng của dự án, hoàn tất cấu hình URL tải MP4 và được TikTok xác nhận đăng hai bài riêng tư. Hai bài đã xuất hiện nhưng người dùng báo lỗi phát; nghiệm thu chưa hoàn tất. Bằng chứng và tiến độ kiểm tra xem [biên bản tích hợp](TIKTOK_INTEGRATION_STATUS.md). Chưa tích hợp TikTok Shop; không dùng clip có lời kêu gọi giỏ hàng cho luồng video thường.
 
 ## 1. Dùng trên giao diện
 
@@ -14,7 +14,7 @@ Content Studio dùng cá nhân trên máy, không cần tài khoản Studio, đ�
 4. Bấm **Kết nối tài khoản TikTok**. TikTok hỏi quyền; Content Studio không hỏi mật khẩu TikTok. Sau khi quay về, chọn đúng tài khoản, đọc tên và thời lượng được phép.
 5. Kiểm tra caption/hashtag, tự chọn quyền riêng tư. Bình luận/Duet/Stitch mặc định tắt. Khai báo quảng bá thương hiệu và nhãn AI phù hợp với clip. Xác nhận đã xem, quyền sử dụng âm thanh và việc gửi đăng.
 6. Bấm **Đăng ngay**, hoặc chọn ngày giờ **Việt Nam UTC+7** rồi **Đặt lịch đăng**. Máy chủ phải bật và có mạng. Đây là giờ bắt đầu gửi; TikTok có thể cần thêm thời gian xử lý.
-7. Bấm **Cập nhật kết quả**. Chỉ trạng thái `PUBLISHED` từ TikTok mới được hiển thị là đã đăng. Bài riêng tư có thể không có mã/link công khai.
+7. Bấm **Cập nhật kết quả**. Chỉ trạng thái `PUBLISHED` từ TikTok mới được hiển thị là đã đăng. Mở bài trong tài khoản đích để xem hết và kiểm tra hình, tiếng; kết quả API chưa thay thế việc kiểm tra phát thực tế. Bài riêng tư có thể không có mã/link công khai.
 
 MP4 tối đa 45 MB, có hình H.264 và thời lượng đọc được. Thay MP4 hoặc mở kịch bản để sửa sẽ hủy lịch chưa gửi và yêu cầu duyệt lại. Khi đang gửi hoặc chưa biết TikTok đã nhận chưa, phần mềm chặn thay bản đó.
 
@@ -77,11 +77,20 @@ Không bật lại các workflow lập lịch/đăng/retry **v1** cho cùng dữ
 | BLOCKED | Chưa gửi được vì video, quyền hoặc cấu hình không còn hợp lệ; sửa nguyên nhân rồi xác nhận giờ mới. |
 | RECONCILE | Mất kết nối/khởi động lại khi bắt đầu gửi; cần đối chiếu TikTok, không tự retry. Giữ dữ liệu để kiểm tra; chưa có nút “bỏ qua” tạo đăng trùng. |
 | FAILED | TikTok xác nhận thất bại; kiểm tra nguyên nhân, tạo lượt mới sau khi xem lại. |
-| PUBLISHED | TikTok xác nhận đăng xong. Không suy luận từ thông báo upload thành công. |
+| PUBLISHED | TikTok xác nhận đăng xong. Mở bài để kiểm tra hình và tiếng; không đồng nghĩa đã nghiệm thu phát thực tế. |
 
 Nếu gặp `unaudited_client_can_only_post_to_private_accounts`, **cả tài khoản TikTok phải ở chế độ riêng tư** tại thời điểm đăng; chỉ chọn **Chỉ mình tôi** cho video chưa đủ. Trong ứng dụng TikTok, vào **Hồ sơ → ☰ → Cài đặt và quyền riêng tư → Quyền riêng tư → Tài khoản riêng tư**. Người dùng tự thay đổi vì lựa chọn này ảnh hưởng toàn bộ tài khoản; có thể dùng tài khoản thử riêng nếu muốn giữ tài khoản chính công khai. Sau khi xử lý, đổi giờ của lượt đang `BLOCKED` để thử lại; không bấm tạo thêm lượt giống nhau. [Quy định ứng dụng chưa audit](https://developers.tiktok.com/docs/en/content-sharing-guidelines).
 
 Token TikTok được mã hóa theo tài khoản. OAuth state có hạn và dùng một lần. Mỗi lượt có mã thao tác và lưu đúng video/hash, revision, tài khoản, caption/hashtag và lựa chọn đăng. Gửi lại cùng yêu cầu trả cùng bản ghi. Khi có `publish_id`, chỉ đọc trạng thái của mã đó. Lỗi đồng bộ Notion không gửi lại TikTok.
+
+### Bài đã đăng nhưng không phát được
+
+1. Giữ mã lượt và hai bản gốc; không bấm đăng lại hoặc xóa bài. Mở đúng bài bằng tài khoản sở hữu trên điện thoại và trình duyệt. Bài riêng tư cần đăng nhập đúng tài khoản để so sánh.
+2. Nếu điện thoại phát được, tải lại trang và thử một trình duyệt khác. Kiểm tra tiện ích chặn nội dung và bộ nhớ đệm của riêng TikTok; không kết luận lỗi file chỉ từ một trình duyệt. Không thay đổi cài đặt quyền riêng tư để thử.
+3. Nếu nhiều thiết bị cùng lỗi, đọc lại trạng thái bằng `publish_id` hiện có và đối chiếu file gốc: hash, giải mã hình/tiếng, thời lượng, tốc độ khung hình. Khi có dấu hiệu lỗi truyền, kiểm tra HTTPS trả đúng MP4 và đủ byte, không redirect. URL media hết hạn sau lượt tải không chứng minh lần đăng trước thất bại.
+4. Chỉ tạo bản sửa khi đã tìm thấy vấn đề ở file. Xem và duyệt lại bản mới trước khi đề xuất một lượt thử bổ sung. Nếu dữ liệu và đường truyền đều đạt, lưu thông báo lỗi cùng bằng chứng để liên hệ hỗ trợ TikTok; không tự đăng lại liên tục.
+
+Giữ `PUBLISHED` theo kết quả API và ghi riêng kết quả phát thực tế trong biên bản nghiệm thu. Không chuyển bài đã đăng về hàng đợi chỉ vì trình phát lỗi. [Trạng thái đăng](https://developers.tiktok.com/docs/en/content-posting-api-reference-get-video-status) · [Yêu cầu truyền video](https://developers.tiktok.com/docs/en/content-posting-api-media-transfer-guide).
 
 ## 5. Kiểm thử và nghiệm thu còn lại
 

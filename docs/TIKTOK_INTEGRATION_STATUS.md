@@ -1,6 +1,6 @@
 # Đối chiếu tích hợp — cập nhật 21/11/2026
 
-**TikTok đã xác nhận thành công hai lượt riêng tư: Đăng ngay và Đặt lịch.** Người dùng đã thấy và phát được clip Đăng ngay; đang đối chiếu clip đặt lịch trên tài khoản. Mở Studio không cần tài khoản quản trị. Hướng dẫn hiện hành: [Content Studio cá nhân](PERSONAL_STUDIO.md).
+**TikTok đã xác nhận đăng hai bài riêng tư: Đăng ngay và Đặt lịch; nghiệm thu phát video chưa đạt.** Người dùng thấy đủ hai bài nhưng sau đó báo lỗi phát. Ảnh và kiểm tra trang trong trình duyệt xác nhận bài A hiện thông báo lỗi phát; chưa có kết quả đối chiếu trên điện thoại. Mở Studio không cần tài khoản quản trị. Hướng dẫn hiện hành: [Content Studio cá nhân](PERSONAL_STUDIO.md).
 
 ## Nghiệm thu đăng thật ngày 21/11/2026
 
@@ -8,13 +8,21 @@
 - Dùng lại ứng dụng TikTok của dự án. OAuth v2 đã kết nối; đọc thông tin người đăng thành công, quyền riêng tư chọn `SELF_ONLY`.
 - File xác minh URL do TikTok cấp được phục vụ qua HTTPS với nội dung khớp nguyên byte. Người dùng xác nhận người quản lý đã hoàn tất Verify; lượt gửi MP4 sau đó được TikTok chấp nhận.
 - TikTok ban đầu từ chối vì tài khoản chưa riêng tư. Người dùng đã tự bật **Tài khoản riêng tư**; đây là thiết lập toàn tài khoản, khác với quyền **Chỉ mình tôi** của từng video. Giữ `TIKTOK_APP_AUDITED=0`.
-- **Clip A, Đăng ngay:** gửi lúc 10:07:05 giờ Việt Nam; có mã gửi thật và trạng thái cuối `PUBLISHED`. Người dùng đã xác nhận clip riêng tư 10 giây xuất hiện và phát được.
+- **Clip A, Đăng ngay:** gửi lúc 10:07:05 giờ Việt Nam; có mã gửi thật và trạng thái cuối `PUBLISHED`. Người dùng ban đầu xác nhận clip riêng tư 10 giây xuất hiện và phát được, sau đó cung cấp ảnh lỗi phát trong trình duyệt. Giữ cả hai ghi nhận theo thời điểm; chưa kết luận nguyên nhân.
 - **Clip B, Đặt lịch:** đã kiểm tra đổi giờ và hủy lượt cũ trước hạn. Lịch cuối lúc 10:17:19 giờ Việt Nam; workflow tự gửi lúc 10:17:31, TikTok xác nhận `PUBLISHED` lúc 10:18:31. Thời điểm gửi lệch khoảng 12 giây so với lịch, phù hợp chu kỳ xử lý mỗi phút; TikTok tiếp tục xử lý trước khi hoàn tất.
 - Đã khởi động lại Automation và n8n trước hạn. Đọc lại cho thấy lịch cuối và hai quyết định duyệt vẫn còn; lịch cũ vẫn `CANCELLED`.
 - Sau giờ của lịch đã hủy hơn một phút, lượt đó vẫn `CANCELLED` và không có mã đăng TikTok. API có đúng hai lượt `PUBLISHED`, một lượt hủy; không có lượt gửi thừa.
 - Gửi lại đúng mã yêu cầu A đã hoàn tất trả về cùng bản ghi `PUBLISHED`; số lượt không tăng và không gửi thêm bài.
 - Bộ kiểm thử trên máy ngày 21/11/2026 đạt **221/221**: 199 unittest Python, 10 hồi quy Automation và 12 JavaScript. Bộ kiểm thử cách ly khóa/dữ liệu thật và không gọi đăng TikTok; các lượt đăng thật bên trên là nghiệm thu riêng.
 - Mã lượt, mã gửi TikTok, hash MP4, thời điểm xử lý, snapshot API và xác nhận người dùng được lưu trong biên bản riêng ngoài Git. Khóa, tên tài khoản và video thật không nằm trong tài liệu xuất bản.
+
+### Kiểm tra lỗi phát — 18:35 ngày 21/11/2026, giờ Việt Nam
+
+- Đọc lại trực tiếp hai mã gửi: TikTok trả `PUBLISH_COMPLETE`, mã `ok`, không có lý do lỗi. API không trả số byte đã tải ở lần đọc này; không diễn giải trường thiếu thành 0 byte.
+- File gốc và dữ liệu trả qua Studio khớp nguyên byte; tải từng phần trả HTTP 206 đúng nội dung. Cả hai file lưu trong Automation khớp hash đã duyệt.
+- Giải mã hết hình và tiếng bằng FFmpeg đều không có lỗi. Hai clip là H.264 High, yuv420p, 720 × 1280, 24 fps, AAC-LC 48 kHz stereo, dài khoảng 10 và 30 giây.
+- Trang bài A trong Edge vẫn hiện lỗi phát. Chưa có kết quả so sánh trên điện thoại hoặc trình duyệt khác; chưa kết luận nguyên nhân. Chưa có cơ sở chuyển mã hoặc đăng lại.
+- Vẫn đúng hai lượt `PUBLISHED` và một lượt `CANCELLED`; không tạo thêm lượt, không xóa bài. Xem [cách kiểm tra bài đã đăng nhưng không phát](TIKTOK_PUBLISHING_V2.md#bài-đã-đăng-nhưng-không-phát-được).
 
 ## Mốc kiểm tra trước đó — 18/11/2026
 
