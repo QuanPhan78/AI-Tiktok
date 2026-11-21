@@ -4,7 +4,11 @@
   let epoch=0,current=null,video=null,capabilities=null,accountRows=[],creatorInfo=null,pendingOperation=null;
   const statusLabels={ATTACHED:'Chưa duyệt',APPROVED:'Đã duyệt',NEEDS_REVISION:'Cần sửa',PENDING_REVIEW:'Chờ duyệt Telegram',QUEUED:'Chờ bắt đầu gửi',SCHEDULED:'Đã đặt lịch',INITIATING:'Đang gửi',PROCESSING:'TikTok đang xử lý',PUBLISHED:'TikTok xác nhận đã đăng',CANCELLED:'Đã hủy',MISSED:'Quá giờ · cần chọn lại',BLOCKED:'Cần xử lý trước khi gửi',RECONCILE:'Cần đối chiếu · không tự gửi lại',FAILED:'Đăng thất bại'};
   function node(tag,text,cls){const n=document.createElement(tag);if(text!=null)n.textContent=text;if(cls)n.className=cls;return n;}
-  function msg(text='',error=false){$('#publishing-message').textContent=text;$('#publishing-message').className=error?'error':'';}
+  function explainError(text){
+    if(text==='TikTok: unaudited_client_can_only_post_to_private_accounts'||text==='unaudited_client_can_only_post_to_private_accounts')return 'TikTok yêu cầu tài khoản ở chế độ riêng tư vì ứng dụng đang thử nghiệm. Chỉ chọn “Chỉ mình tôi” cho video chưa đủ. Trong TikTok, mở Hồ sơ → ☰ → Cài đặt và quyền riêng tư → Quyền riêng tư → Tài khoản riêng tư. Thay đổi này áp dụng cho toàn bộ tài khoản; bạn có thể dùng tài khoản thử riêng nếu muốn giữ tài khoản hiện tại công khai. Sau khi xử lý, đổi giờ của lượt đang bị chặn để thử lại. Mã lỗi: '+text;
+    return text;
+  }
+  function msg(text='',error=false){$('#publishing-message').textContent=error?explainError(text):text;$('#publishing-message').className=error?'error':'';}
   async function api(path,method='GET',body){const r=await fetch('/api/v2'+path,{method,headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:'Dữ liệu chưa hợp lệ.');return d;}
   function button(label,handler,disabled=false){const b=node('button',label);b.type='button';b.disabled=disabled;b.onclick=async()=>{b.disabled=true;msg();try{await handler();}catch(e){msg(e.message,true);}finally{b.disabled=disabled;}};return b;}
   function field(parent,id,label,type,value=''){const l=node('label',label);l.htmlFor=id;const n=node(type==='textarea'?'textarea':type==='select'?'select':'input');n.id=id;if(type!=='textarea'&&type!=='select')n.type=type;n.value=value;parent.append(l,n);return n;}
@@ -51,6 +55,7 @@
       parent.append(list);
     }
     if(capabilities.permission_note)parent.append(node('p',capabilities.permission_note,'pub-note'));
+    if(capabilities.audited===false)parent.append(node('p','Ứng dụng đang thử nghiệm: TikTok yêu cầu cả tài khoản ở chế độ riêng tư và video chọn “Chỉ mình tôi”. Cài đặt tài khoản riêng tư ảnh hưởng toàn bộ tài khoản; hãy dùng tài khoản thử riêng nếu muốn giữ tài khoản hiện tại công khai.','pub-note'));
     if(!accountRows.some(a=>a.connected))parent.append(node('p','Chưa kết nối tài khoản TikTok. Bạn cần tự đăng nhập và cấp quyền cho tài khoản muốn đăng.'));
     parent.append(button('Kết nối tài khoản TikTok',async()=>{const d=await api('/tiktok/accounts/connect','POST');const u=new URL(d.url);if(u.origin!=='https://www.tiktok.com')throw new Error('Địa chỉ kết nối chưa hợp lệ.');location.assign(u.href);},!(capabilities.connect_ready??capabilities.ready)));
     for(const account of accountRows){const row=node('p',account.nickname+(account.connected?' · Đã kết nối':' · Đã ngắt'));if(account.connected)row.append(button('Ngắt kết nối',async()=>{if(!confirm('Ngắt tài khoản này và hủy các lịch chưa gửi?'))return;const d=await api('/tiktok/accounts/'+account.id,'DELETE');await open(current?.standalone?null:current?.id);if(!d.revoked_at_tiktok)msg('Đã ngắt tại Content Studio. TikTok chưa xác nhận thu hồi; kiểm tra quyền ứng dụng trong TikTok.');}));parent.append(row);}
@@ -113,7 +118,7 @@
   async function refreshJobs(parent,token){
     const rows=await api('/publications');if(token!==epoch)return;parent.replaceChildren(node('h3','Lịch đăng của bạn'));parent.append(button('Cập nhật kết quả',()=>refreshJobs(parent,token)));
     if(!rows.length)parent.append(node('p','Chưa có lịch đăng.'));
-    for(const row of rows){const card=node('article',null,'pub-card');card.append(node('strong',statusLabels[row.status]||row.status),node('p',timeVN(row.due)+' · giờ Việt Nam'),node('p',row.post.title,'pub-title'),node('small','Mã lượt: '+row.id));if(row.error)card.append(node('p',row.error,'error'));
+    for(const row of rows){const card=node('article',null,'pub-card');card.append(node('strong',statusLabels[row.status]||row.status),node('p',timeVN(row.due)+' · giờ Việt Nam'),node('p',row.post.title,'pub-title'),node('small','Mã lượt: '+row.id));if(row.error)card.append(node('p',explainError(row.error),'error'));
       card.append(node('p',`${row.account_name||'TikTok'} · r${row.video?.revision||'—'} · MP4 v${row.video?.version||'—'}`));if(row.notion_sync_error)card.append(node('p',row.notion_sync_error,'pub-note'));
       if(row.status==='PUBLISHED')card.append(node('p',row.post.privacy_level==='SELF_ONLY'?'Bài riêng tư đã được TikTok xác nhận.':'TikTok xác nhận đã đăng; bài công khai có thể cần thêm thời gian kiểm duyệt.'));
       if(row.post_ids?.length)card.append(node('p','Mã bài TikTok: '+row.post_ids.join(', ')));

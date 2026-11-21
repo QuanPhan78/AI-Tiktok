@@ -32,6 +32,9 @@ data/
 .test-deps/
 .pytest_cache/
 
+# TikTok verification files belong to the local deployment
+integrations/long-v2/verification/tiktok*.txt
+
 # Video test files
 *.mp4
 *.mov

@@ -4,7 +4,7 @@ Cách khởi động thống nhất và sao lưu: [Content Studio cá nhân](PER
 
 Content Studio dùng cá nhân trên máy, không cần tài khoản Studio, đăng ký hay mật khẩu. Kết nối TikTok qua OAuth và bộ xử lý lịch vẫn được giữ. MP4 phải được duyệt đúng phiên bản trước khi đăng. Người mới dùng duyệt trên web; dữ liệu dự án đã bàn giao Notion tiếp tục dùng quyết định Telegram.
 
-**Trạng thái triển khai:** phần Automation của Long đã nằm trong `main` và được nối với giao diện v2. Đã tìm thấy và dùng lại cấu hình ứng dụng TikTok của dự án trên máy nghiệm thu. Bản ghi kết nối cũ từng có `video.publish`, nhưng access token đã hết hạn; chưa xác nhận quyền hiện tại, OAuth v2 hoặc đăng thật. Xem [biên bản đối chiếu tích hợp](TIKTOK_INTEGRATION_STATUS.md). Chưa tích hợp TikTok Shop; SEJOY r26 có lời kêu gọi giỏ hàng vẫn được giữ để đối chiếu, không tự đăng qua luồng video thường.
+**Trạng thái triển khai:** phần Automation của Long đã nằm trong `main` và được nối với giao diện v2. Ngày 21/11/2026 đã kết nối OAuth v2 bằng ứng dụng của dự án, hoàn tất cấu hình URL tải MP4 và đăng thử riêng tư thành công bằng video tải sẵn. Tiến độ lượt đặt lịch và bằng chứng đối chiếu xem [biên bản tích hợp](TIKTOK_INTEGRATION_STATUS.md). Chưa tích hợp TikTok Shop; không dùng clip có lời kêu gọi giỏ hàng cho luồng video thường.
 
 ## 1. Dùng trên giao diện
 
@@ -78,6 +78,8 @@ Không bật lại các workflow lập lịch/đăng/retry **v1** cho cùng dữ
 | RECONCILE | Mất kết nối/khởi động lại khi bắt đầu gửi; cần đối chiếu TikTok, không tự retry. Giữ dữ liệu để kiểm tra; chưa có nút “bỏ qua” tạo đăng trùng. |
 | FAILED | TikTok xác nhận thất bại; kiểm tra nguyên nhân, tạo lượt mới sau khi xem lại. |
 | PUBLISHED | TikTok xác nhận đăng xong. Không suy luận từ thông báo upload thành công. |
+
+Nếu gặp `unaudited_client_can_only_post_to_private_accounts`, **cả tài khoản TikTok phải ở chế độ riêng tư** tại thời điểm đăng; chỉ chọn **Chỉ mình tôi** cho video chưa đủ. Trong ứng dụng TikTok, vào **Hồ sơ → ☰ → Cài đặt và quyền riêng tư → Quyền riêng tư → Tài khoản riêng tư**. Người dùng tự thay đổi vì lựa chọn này ảnh hưởng toàn bộ tài khoản; có thể dùng tài khoản thử riêng nếu muốn giữ tài khoản chính công khai. Sau khi xử lý, đổi giờ của lượt đang `BLOCKED` để thử lại; không bấm tạo thêm lượt giống nhau. [Quy định ứng dụng chưa audit](https://developers.tiktok.com/docs/en/content-sharing-guidelines).
 
 Token TikTok được mã hóa theo tài khoản. OAuth state có hạn và dùng một lần. Mỗi lượt có mã thao tác và lưu đúng video/hash, revision, tài khoản, caption/hashtag và lựa chọn đăng. Gửi lại cùng yêu cầu trả cùng bản ghi. Khi có `publish_id`, chỉ đọc trạng thái của mã đó. Lỗi đồng bộ Notion không gửi lại TikTok.
 

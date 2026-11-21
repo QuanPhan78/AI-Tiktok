@@ -1,6 +1,22 @@
-# Đối chiếu tích hợp — cập nhật 18/11/2026
+# Đối chiếu tích hợp — cập nhật 21/11/2026
 
-**Bản dùng cá nhân đã chạy trên máy, HTTPS và webhook Telegram đã kết nối. Chưa nghiệm thu đăng TikTok thật.** Mở Studio không cần tài khoản quản trị. Hướng dẫn hiện hành: [Content Studio cá nhân](PERSONAL_STUDIO.md).
+**TikTok đã xác nhận thành công hai lượt riêng tư: Đăng ngay và Đặt lịch.** Người dùng đã thấy và phát được clip Đăng ngay; đang đối chiếu clip đặt lịch trên tài khoản. Mở Studio không cần tài khoản quản trị. Hướng dẫn hiện hành: [Content Studio cá nhân](PERSONAL_STUDIO.md).
+
+## Nghiệm thu đăng thật ngày 21/11/2026
+
+- Dùng hai MP4 có sẵn, được người dùng xem và duyệt riêng trong mục **Video thường đã hoàn chỉnh**. Không khôi phục phiên SEJOY cũ, không gọi API tạo video trả phí.
+- Dùng lại ứng dụng TikTok của dự án. OAuth v2 đã kết nối; đọc thông tin người đăng thành công, quyền riêng tư chọn `SELF_ONLY`.
+- File xác minh URL do TikTok cấp được phục vụ qua HTTPS với nội dung khớp nguyên byte. Người dùng xác nhận người quản lý đã hoàn tất Verify; lượt gửi MP4 sau đó được TikTok chấp nhận.
+- TikTok ban đầu từ chối vì tài khoản chưa riêng tư. Người dùng đã tự bật **Tài khoản riêng tư**; đây là thiết lập toàn tài khoản, khác với quyền **Chỉ mình tôi** của từng video. Giữ `TIKTOK_APP_AUDITED=0`.
+- **Clip A, Đăng ngay:** gửi lúc 10:07:05 giờ Việt Nam; có mã gửi thật và trạng thái cuối `PUBLISHED`. Người dùng đã xác nhận clip riêng tư 10 giây xuất hiện và phát được.
+- **Clip B, Đặt lịch:** đã kiểm tra đổi giờ và hủy lượt cũ trước hạn. Lịch cuối lúc 10:17:19 giờ Việt Nam; workflow tự gửi lúc 10:17:31, TikTok xác nhận `PUBLISHED` lúc 10:18:31. Thời điểm gửi lệch khoảng 12 giây so với lịch, phù hợp chu kỳ xử lý mỗi phút; TikTok tiếp tục xử lý trước khi hoàn tất.
+- Đã khởi động lại Automation và n8n trước hạn. Đọc lại cho thấy lịch cuối và hai quyết định duyệt vẫn còn; lịch cũ vẫn `CANCELLED`.
+- Sau giờ của lịch đã hủy hơn một phút, lượt đó vẫn `CANCELLED` và không có mã đăng TikTok. API có đúng hai lượt `PUBLISHED`, một lượt hủy; không có lượt gửi thừa.
+- Gửi lại đúng mã yêu cầu A đã hoàn tất trả về cùng bản ghi `PUBLISHED`; số lượt không tăng và không gửi thêm bài.
+- Bộ kiểm thử trên máy ngày 21/11/2026 đạt **221/221**: 199 unittest Python, 10 hồi quy Automation và 12 JavaScript. Bộ kiểm thử cách ly khóa/dữ liệu thật và không gọi đăng TikTok; các lượt đăng thật bên trên là nghiệm thu riêng.
+- Mã lượt, mã gửi TikTok, hash MP4, thời điểm xử lý, snapshot API và xác nhận người dùng được lưu trong biên bản riêng ngoài Git. Khóa, tên tài khoản và video thật không nằm trong tài liệu xuất bản.
+
+## Mốc kiểm tra trước đó — 18/11/2026
 
 ## Source và dữ liệu
 
@@ -34,7 +50,7 @@
 
 Chạy `python scripts/verify.py` để kiểm tra lại; lệnh cách ly dữ liệu và khóa thật, không gọi tạo video, Notion, Telegram hoặc đăng TikTok. Kiểm thử tự động không được tính là nghiệm thu bên ngoài.
 
-## Những bước còn chờ
+## Những bước còn chờ tại mốc 18/11/2026
 
 1. **Quyền ứng dụng:** người đang quản lý ứng dụng TikTok của dự án xác nhận quyền sử dụng, cấu hình callback v2 theo tên miền đang chạy, tài khoản thử và `video.publish`. Nếu muốn tự làm, dùng tài khoản có quyền quản lý ứng dụng đó.
 2. **Tên miền MP4:** xác minh tên miền hoặc URL prefix `/media/tiktok/` trong Developer Portal, đặt file xác minh được cấp vào thư mục `verification/` và kiểm tra hoàn tất. HTTPS hoạt động chưa phải xác minh TikTok.
